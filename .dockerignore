@@ -1,0 +1,40 @@
+# dependencies
+node_modules
+
+# next.js build output
+.next
+out
+build
+dist
+*.tsbuildinfo
+next-env.d.ts
+
+# tests / coverage / quality
+coverage
+.scannerwork
+**/*.log
+
+# local env files (never leak secrets or config into the image)
+.env
+.env.*
+!.env.example
+
+# runtime data
+storage
+uploads
+
+# misc / tooling / vcs / ide
+.git
+.gitignore
+preview
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+*.pem
+docker-compose*.yml
+README.md
+sonar-project.properties
+tsconfig.sonar.json
+tests

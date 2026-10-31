@@ -1,0 +1,354 @@
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 248 250 252;
+    --foreground: 15 23 42;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --popover: 255 255 255;
+    --popover-foreground: 15 23 42;
+    --primary: 255 81 0;
+    --primary-foreground: 255 255 255;
+    --secondary: 44 39 75;
+    --secondary-foreground: 255 255 255;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --accent: 241 237 247;
+    --accent-foreground: 58 51 86;
+    --destructive: 186 26 26;
+    --destructive-foreground: 255 255 255;
+    --border: 226 232 240;
+    --input: 203 213 225;
+    --ring: 255 81 0;
+    --radius: 0.25rem;
+  }
+
+  .dark {
+    --background: 15 23 42;
+    --foreground: 248 250 252;
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
+    --popover: 30 41 59;
+    --popover-foreground: 248 250 252;
+    --primary: 255 81 0;
+    --primary-foreground: 255 255 255;
+    --secondary: 44 39 75;
+    --secondary-foreground: 255 255 255;
+    --muted: 51 65 85;
+    --muted-foreground: 148 163 184;
+    --accent: 44 39 75;
+    --accent-foreground: 248 250 252;
+    --destructive: 255 180 171;
+    --destructive-foreground: 105 0 5;
+    --border: 51 65 85;
+    --input: 51 65 85;
+    --ring: 255 81 0;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-on-surface font-body antialiased min-h-screen flex flex-col selection:bg-primary selection:text-on-primary;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Card elevation system */
+  .card-elevation {
+    @apply bg-white border border-[#ded9e8] rounded-xl shadow-card transition-all duration-200;
+  }
+
+  .card-elevation-hover:hover {
+    @apply hover:border-primary hover:-translate-y-1 hover:shadow-card-hover;
+  }
+
+  .card-elevation-lg {
+    @apply bg-white border border-[#ded9e8] rounded-xl shadow-card transition-all duration-200;
+  }
+
+  .card-elevation-lg:hover {
+    @apply hover:border-primary hover:-translate-y-1 hover:shadow-card-hover;
+  }
+
+  /* Input base styles */
+  .input-base {
+    @apply w-full bg-white border border-[#cbd5e1] rounded-lg px-3 py-2.5 text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body text-base;
+  }
+
+  .input-base-sm {
+    @apply w-full bg-white border border-[#cbd5e1] rounded-lg px-2.5 py-1.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body;
+  }
+
+  .label-base {
+    @apply block font-label font-semibold text-sm text-[#0f172a] mb-1.5;
+  }
+
+  /* Button variants - Geek Tabletop */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm shadow-sm hover:bg-[#e04800] active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#2c274b] border border-[#cbd5e1] font-medium text-sm hover:bg-[#f8fafc] hover:border-[#2c274b] active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] active:scale-[0.98] transition-colors font-label font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  .btn-destructive {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#64748b] hover:text-error hover:bg-[#ffdad6] border border-[#cbd5e1] hover:border-error/50 active:scale-[0.98] transition-all font-label font-medium text-sm focus:outline-none focus:ring-2 focus:ring-error focus:ring-offset-2;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#2c274b] border border-[#cbd5e1] font-medium text-sm hover:bg-[#f8fafc] hover:border-[#2c274b] active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  /* Badge variants */
+  .badge-primary {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label font-medium bg-primary text-white;
+  }
+
+  .badge-secondary {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label font-medium bg-[#2c274b] text-white;
+  }
+
+  .badge-outline {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label font-medium bg-white text-[#2c274b] border border-[#cbd5e1];
+  }
+
+  .badge-destructive {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label font-medium bg-error text-white;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-label font-medium bg-[#2e7d32] text-white;
+  }
+
+  /* Tag chips */
+  .tag-chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-[#f1edf7] text-[#3a3356] border border-[#ddd7eb] font-medium;
+  }
+
+  .tag-chip-secondary {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-[#f1f5f9] text-[#334155] border border-[#cbd5e1] font-medium;
+  }
+
+  /* Rating badges */
+  .rating-badge {
+    @apply px-2 py-0.5 rounded font-metric font-bold shadow-sm;
+  }
+
+  .rating-badge-ludopedia {
+    @apply rating-badge text-[11px] text-white bg-[#ff5100];
+  }
+
+  .rating-badge-bgg {
+    @apply rating-badge text-[10px] text-white bg-[#2c274b];
+  }
+
+  /* Complexity indicators */
+  .complexity-light { @apply text-[#2e7d32]; }
+  .complexity-medium { @apply text-[#ff8533]; }
+  .complexity-heavy { @apply text-error; }
+
+  /* Layout utilities */
+  .game-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter;
+  }
+
+  @media (max-width: 640px) {
+    .game-grid {
+      @apply grid-cols-1;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1023px) {
+    .game-grid {
+      @apply grid-cols-2;
+    }
+  }
+
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .game-grid {
+      @apply grid-cols-3;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .game-grid {
+      @apply grid-cols-4;
+    }
+  }
+
+  .page-container {
+    @apply max-w-7xl w-full mx-auto px-margin md:px-gutter-desktop py-space-lg space-y-space-lg;
+  }
+
+  .section-card {
+    @apply bg-[#2c274b] border border-[#3e3864] text-white rounded-xl p-space-md shadow-[0_4px_16px_rgba(44,39,75,0.15)];
+  }
+
+  .section-card-white {
+    @apply bg-white border border-[#e2e8f0] text-[#0f172a] rounded-xl p-space-md shadow-sm;
+  }
+
+  .section-card-lg {
+    @apply bg-white border border-[#e2e8f0] rounded-xl p-space-lg shadow-sm;
+  }
+
+  .divider-subtle {
+    @apply border-t border-[#f1f5f9];
+  }
+
+  .divider-strong {
+    @apply border-t border-[#e2e8f0];
+  }
+
+  /* Admin header bar */
+  .admin-header {
+    @apply bg-[#2c274b] text-white shadow-header sticky top-0 z-40 border-b border-[#3c365c];
+  }
+
+  .admin-header-border {
+    @apply border-b border-[#3c365c];
+  }
+
+  /* Toast styles */
+  .toast-success {
+    @apply bg-white border border-[#2e7d32] text-[#0f172a] shadow-modal;
+  }
+
+  .toast-error {
+    @apply bg-white border border-error text-[#0f172a] shadow-modal;
+  }
+
+  .toast-default {
+    @apply bg-white border border-[#e2e8f0] text-[#0f172a] shadow-modal;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .font-display { font-family: var(--font-inter); }
+  .font-body { font-family: var(--font-inter); }
+  .font-label { font-family: var(--font-inter); }
+  .font-headline { font-family: var(--font-inter); }
+  .font-metric { font-family: var(--font-jetbrains-mono); }
+
+  /* Selection colors for light theme */
+  ::selection {
+    background-color: #ff5100;
+    color: white;
+  }
+
+  /* Grid pattern overlay */
+  .bg-grid-pattern {
+    background-size: 32px 32px;
+    background-image:
+      linear-gradient(90deg, hsla(15, 18%, 48%, 0.03) 1px, transparent 0),
+      linear-gradient(180deg, hsla(15, 18%, 48%, 0.03) 1px, transparent 0);
+  }
+
+  .card-elevated-shadow {
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  }
+}
