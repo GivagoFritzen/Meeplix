@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<items>
+  <item type="boardgame" id="12345">
+    <name type="primary" sortindex="1" value="Cascadia"/>
+    <name type="alternate" sortindex="1" value="Cascadia: O Tabuleiro"/>
+    <description>Um jogo de tiles e padrões.</description>
+    <yearpublished value="2021"/>
+    <minplayers value="1"/>
+    <maxplayers value="4"/>
+    <minplaytime value="30"/>
+    <maxplaytime value="45"/>
+    <minage value="10"/>
+    <image>https://images.boardgamegeek.com/cover.jpg</image>
+    <thumbnail>https://images.boardgamegeek.com/thumb.jpg</thumbnail>
+    <link type="boardgamepublisher" id="1" value="Flatout Games"/>
+    <link type="boardgamedesigner" id="2" value="Flatout Games"/>
+    <link type="boardgameartist" id="3" value="Artist"/>
+    <link type="boardgamemechanic" id="4" value="Tile Placement"/>
+    <link type="boardgamemechanic" id="5" value="Pattern Building"/>
+    <link type="boardgamecategory" id="6" value="Family Game"/>
+    <statistics>
+      <ratings>
+        <average value="7.5"/>
+        <averageweight value="2.1"/>
+        <ranks>
+          <rank name="boardgame" friendlyname="Board Game Rank" value="100"/>
+        </ranks>
+      </ratings>
+    </statistics>
+  </item>
+</items>

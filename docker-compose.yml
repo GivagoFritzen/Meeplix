@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: meeplix-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: meeplix
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meeplix-app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/meeplix?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: http://localhost:${APP_PORT:-3100}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      STORAGE_PATH: /app/storage
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Meeplix}
+      NEXT_PUBLIC_APP_URL: http://localhost:${APP_PORT:-3100}
+      BGG_API_TOKEN: ${BGG_API_TOKEN}
+    volumes:
+      - storage:/app/storage
+    ports:
+      - "${APP_PORT:-3100}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  storage:

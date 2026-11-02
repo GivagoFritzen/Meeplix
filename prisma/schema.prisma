@@ -1,0 +1,100 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+model SiteConfig {
+  id           String   @id @default(cuid())
+  hideDesigners Boolean   @default(true)
+  hidePublishers Boolean   @default(false)
+  hideArtists Boolean   @default(false)
+  hideTags Boolean   @default(false)
+  updatedAt    DateTime @updatedAt
+
+  @@map("site_configs")
+}
+
+model Game {
+  id              String     @id @default(cuid())
+  name            String
+  originalName    String?
+  description     String?
+  year            Int?
+  minPlayers      Int?
+  maxPlayers      Int?
+  minPlaytime     Int?
+  publisher       String?
+  designer        String?
+  artist          String?
+  bggRating       Float?
+  ludoRating      Float?
+  bggRank         Int?
+  weight          Float?
+  bestPlayers     Int?
+  minAge          Int?
+  coverImage      String?
+  notes           String?
+  mechanics       String[]   @default([])
+  categories      String[]   @default([])
+  links           Json?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  downtime        Float?
+  interaction     Float?
+  luck            Float?
+  replayability   Float?
+  preparationText String?
+  coverImageData  Json?
+  ludoRank        Int?
+  files           GameFile[]
+
+  @@index([name])
+  @@index([year])
+  @@index([designer])
+  @@index([publisher])
+  @@index([createdAt])
+  @@map("games")
+}
+
+model GameFile {
+  id           String   @id @default(cuid())
+  gameId       String
+  originalName String
+  displayName  String
+  mimeType     String
+  extension    String
+  size         BigInt
+  path         String
+  type         FileType @default(OTHER)
+  uploadedAt   DateTime @default(now())
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+  @@map("game_files")
+}
+
+enum FileType {
+  COVER
+  MANUAL
+  RULEBOOK
+  ERRATA
+  QUICK_REFERENCE
+  IMAGE
+  OTHER
+}
