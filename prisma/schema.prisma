@@ -62,6 +62,7 @@ model Game {
   preparationText String?
   coverImageData  Json?
   ludoRank        Int?
+  isActive        Boolean    @default(false)
   files           GameFile[]
 
   @@index([name])
@@ -69,6 +70,7 @@ model Game {
   @@index([designer])
   @@index([publisher])
   @@index([createdAt])
+  @@index([isActive])
   @@map("games")
 }
 

@@ -27,6 +27,7 @@ interface GameCardProps {
   bggRating?: Nullable<number>;
   ludoRating?: Nullable<number>;
   mechanics?: string[];
+  isActive?: Nullable<boolean>;
   preferences: DisplayPreferences;
 }
 
@@ -44,6 +45,7 @@ export function GameCard({
   bggRating,
   ludoRating,
   mechanics = [],
+  isActive,
   preferences,
 }: GameCardProps) {
   const complexity = weight ? getComplexityLabel(weight) : null;
@@ -59,7 +61,9 @@ export function GameCard({
   return (
     <Link
       href={`/jogos/${slug}`}
-      className="card-elevation-lg group overflow-hidden flex flex-col bg-white border border-[#ded9e8] shadow-[0_2px_8px_rgba(33,26,60,0.06)] hover:border-[#ff5100] hover:-translate-y-1 transition-all duration-200"
+      className={`card-elevation-lg group overflow-hidden flex flex-col bg-white shadow-[0_2px_8px_rgba(33,26,60,0.06)] hover:border-[#ff5100] hover:-translate-y-1 transition-all duration-200 ${
+        isActive ? "border-2 border-[#ff5100] ring-2 ring-[#ff5100]/20" : "border border-[#ded9e8]"
+      }`}
     >
       <div className="relative aspect-[2/1] sm:aspect-[4/3] bg-surface-container-lowest overflow-hidden">
         {coverImage ? (
@@ -73,6 +77,14 @@ export function GameCard({
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-surface-container-lowest">
             <span className="material-symbols-outlined text-[#94a3b8] text-[48px]">casino</span>
+          </div>
+        )}
+        {isActive && (
+          <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1 bg-[#ff5100] text-white text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded shadow-md">
+            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+            </svg>
+            <span>Fixado</span>
           </div>
         )}
         <div className="absolute top-2.5 right-2.5 flex flex-col gap-1 items-end">

@@ -24,6 +24,7 @@ export interface TestGameInput {
   categories?: string[];
   links?: { bgg?: string | null; ludopedia?: string | null; manual?: string | null };
   preparationText?: string | null;
+  isActive?: boolean;
 }
 
 export function buildGameInput(overrides: Partial<TestGameInput> = {}): TestGameInput {

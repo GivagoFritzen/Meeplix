@@ -70,6 +70,57 @@ export async function deleteGame(id: string) {
   return { success: true };
 }
 
+export async function toggleGameActive(id: string, active: boolean) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Não autorizado");
+
+  if (active) {
+    if (typeof (prisma as any).$transaction === "function") {
+      await (prisma as any).$transaction([
+        prisma.game.updateMany({
+          where: { isActive: true },
+          data: { isActive: false },
+        }),
+        prisma.game.update({
+          where: { id },
+          data: { isActive: true },
+        }),
+      ]);
+    } else {
+      await prisma.game.updateMany({
+        where: { isActive: true },
+        data: { isActive: false },
+      });
+      await prisma.game.update({
+        where: { id },
+        data: { isActive: true },
+      });
+    }
+  } else {
+    await prisma.game.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  const game = await prisma.game.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/colecao");
+  revalidatePath("/admin");
+  revalidatePath("/admin/jogos");
+  if (game?.name) {
+    const slug = slugify(game.name);
+    if (slug) revalidatePath(`/jogos/${slug}`);
+  }
+  revalidatePath(`/jogos/${id}`);
+
+  return { success: true, isActive: active };
+}
+
 export async function getGames(filters?: z.infer<typeof GameFilterSchema>) {
   const validated = GameFilterSchema.parse(filters || {});
   const { sort = "name", order = "asc", page = 1, limit = 24 } = validated;
@@ -77,33 +128,97 @@ export async function getGames(filters?: z.infer<typeof GameFilterSchema>) {
   const where = buildGameWhere(validated);
   const orderBy: Record<string, "asc" | "desc"> = { [sort]: order };
 
-  const [games, total] = await Promise.all([
-    prisma.game.findMany({
-      where,
-      orderBy,
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        files: {
-          where: { type: "COVER" },
-          take: 1,
-        },
+  const filesInclude = {
+    files: {
+      where: { type: "COVER" as const },
+      take: 1,
+    },
+  };
+
+  const mapGame = (g: any) => ({
+    ...g,
+    coverImage: g.files?.[0]?.path || g.coverImage || null,
+    bggRating: g.bggRating ? Number(g.bggRating) : null,
+    ludoRating: g.ludoRating ? Number(g.ludoRating) : null,
+    weight: g.weight ? Number(g.weight) : null,
+    isActive: Boolean(g.isActive),
+  });
+
+  const activeGame = typeof prisma.game.findFirst === "function"
+    ? await prisma.game.findFirst({
+        where: { isActive: true },
+        include: filesInclude,
+      })
+    : null;
+
+  if (!activeGame) {
+    const [games, total] = await Promise.all([
+      prisma.game.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: filesInclude,
+      }),
+      prisma.game.count({ where }),
+    ]);
+
+    return {
+      games: games.map(mapGame),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // Jogo ativo encontrado: ele deve sempre vir fixado como primeiro
+  const [activeMatchesCount, totalMatching] = await Promise.all([
+    prisma.game.count({
+      where: {
+        AND: [where, { id: activeGame.id }],
       },
     }),
     prisma.game.count({ where }),
   ]);
 
+  const activeMatches = activeMatchesCount > 0;
+  const total = activeMatches ? totalMatching : totalMatching + 1;
+  const totalPages = Math.ceil(total / limit);
+
+  const otherWhere = {
+    AND: [where, { id: { not: activeGame.id } }],
+  };
+
+  let gamesList: any[] = [];
+
+  if (page === 1) {
+    const otherGames = limit > 1
+      ? await prisma.game.findMany({
+          where: otherWhere,
+          orderBy,
+          skip: 0,
+          take: limit - 1,
+          include: filesInclude,
+        })
+      : [];
+    gamesList = [mapGame(activeGame), ...otherGames.map(mapGame)];
+  } else {
+    const skip = (page - 1) * limit - 1;
+    const otherGames = await prisma.game.findMany({
+      where: otherWhere,
+      orderBy,
+      skip: Math.max(0, skip),
+      take: limit,
+      include: filesInclude,
+    });
+    gamesList = otherGames.map(mapGame);
+  }
+
   return {
-    games: games.map((g) => ({
-      ...g,
-      coverImage: g.files[0]?.path || g.coverImage || null,
-      bggRating: g.bggRating ? Number(g.bggRating) : null,
-      ludoRating: g.ludoRating ? Number(g.ludoRating) : null,
-      weight: g.weight ? Number(g.weight) : null,
-    })),
+    games: gamesList,
     total,
     page,
-    totalPages: Math.ceil(total / limit),
+    totalPages,
   };
 }
 
@@ -128,6 +243,7 @@ interface GameDetailSource {
   bggRating: unknown;
   ludoRating: unknown;
   weight: unknown;
+  isActive?: unknown;
   files: Array<{ type: string; path: string; size: bigint | number }>;
 }
 
@@ -154,6 +270,7 @@ function mapGameDetail<T extends GameDetailSource>(game: T) {
     bggRating: game.bggRating ? Number(game.bggRating) : null,
     ludoRating: game.ludoRating ? Number(game.ludoRating) : null,
     weight: game.weight ? Number(game.weight) : null,
+    isActive: Boolean((game as any).isActive),
     files: game.files.map((f) => ({
       ...f,
       size: Number(f.size),
