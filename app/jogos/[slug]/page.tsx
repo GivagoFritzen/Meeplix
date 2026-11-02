@@ -15,9 +15,9 @@ import { resolveAssetUrl, getLabelFromValue, formatRating, formatPlaytime, forma
 export const dynamic = "force-dynamic";
 
 interface GamePageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 type GameDetail = NonNullable<Awaited<ReturnType<typeof getGameBySlug>>>;
@@ -281,8 +281,8 @@ function MobileGameHero({
   );
 }
 
-export async function generateMetadata({ params }: GamePageProps): Promise<Metadata> {
-  const { slug } = await Promise.resolve(params);
+export async function generateMetadata(props: GamePageProps): Promise<Metadata> {
+  const { slug } = await props.params;
   const game = await getGameBySlug(slug);
 
   if (!game) {
@@ -307,8 +307,8 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
   };
 }
 
-export default async function GameDetailPage({ params }: GamePageProps) {
-  const { slug } = await Promise.resolve(params);
+export default async function GameDetailPage(props: GamePageProps) {
+  const { slug } = await props.params;
   const game = await getGameBySlug(slug);
   const session = await auth();
   const preferences = await getDisplayPreferences();

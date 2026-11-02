@@ -339,7 +339,7 @@ interface CoverSectionProps {
   form: GameFormReturn;
   coverPreview: string | null;
   setCoverPreview: (value: string | null) => void;
-  coverFileInputRef: React.RefObject<HTMLInputElement>;
+  coverFileInputRef: React.RefObject<HTMLInputElement | null>;
   markCoverFileForDeletion: () => void;
   existingCoverFileId: string | null;
   isMarkedForDeletion: (fileId: string) => boolean;

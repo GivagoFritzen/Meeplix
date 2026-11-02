@@ -132,6 +132,7 @@ export function GamesTable({ onEdit, onDelete, editingId, refreshTrigger }: Game
   }, [debouncedSearch, sort, page, players, duration, complexity, mechanic, refreshTrigger]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- busca inicial e refetch ao alterar filtros
     fetchGames();
   }, [fetchGames]);
 

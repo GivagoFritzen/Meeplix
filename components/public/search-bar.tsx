@@ -12,7 +12,7 @@ interface SearchBarProps {
 export function SearchBar({ placeholder = "Buscar por título, designer, editora ou mecânica...", className }: SearchBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout>(undefined);
 
   const handleSearch = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

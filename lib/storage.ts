@@ -120,7 +120,7 @@ export async function saveFile(
 
 export async function deleteFile(relativePath: string): Promise<boolean> {
   try {
-    const fullPath = path.join(STORAGE_PATH, relativePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ STORAGE_PATH, relativePath);
     await fs.access(fullPath);
     await fs.unlink(fullPath);
 
@@ -142,7 +142,7 @@ export async function deleteFile(relativePath: string): Promise<boolean> {
 
 export async function getFileBuffer(relativePath: string): Promise<Buffer | null> {
   try {
-    const fullPath = path.join(STORAGE_PATH, relativePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ STORAGE_PATH, relativePath);
     return await fs.readFile(fullPath);
   } catch {
     return null;
@@ -151,7 +151,7 @@ export async function getFileBuffer(relativePath: string): Promise<Buffer | null
 
 export async function fileExists(relativePath: string): Promise<boolean> {
   try {
-    const fullPath = path.join(STORAGE_PATH, relativePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ STORAGE_PATH, relativePath);
     await fs.access(fullPath);
     return true;
   } catch {
