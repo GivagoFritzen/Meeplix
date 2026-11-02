@@ -57,15 +57,17 @@ openssl rand -base64 32
 docker compose up -d
 ```
 
-### 4. Execute migrações e seed
+> O schema do banco e o seed (usuário admin + configurações iniciais) são aplicados
+> automaticamente pelo serviço `migrate` antes do app iniciar.
+
+Para rodar manualmente (ex.: após apagar o volume do banco com o app já em execução):
 ```bash
-docker compose exec app npm run db:migrate
-docker compose exec app npm run db:seed
+docker compose run --rm migrate
 ```
 
-### 5. Acesse
-- **Público**: http://localhost:3000
-- **Admin**: http://localhost:3000/admin/login
+### 4. Acesse
+- **Público**: http://localhost:3100 (porta definida por `APP_PORT`)
+- **Admin**: http://localhost:3100/admin/login
   - Email: `admin@meeplix.local` (ou o definido no .env)
   - Senha: a definida no .env
 
@@ -91,9 +93,9 @@ cp .env.example .env
 docker compose up -d db
 ```
 
-### 4. Execute migrações e seed
+### 4. Aplique o schema e o seed
 ```bash
-npm run db:migrate
+npm run db:deploy
 npm run db:seed
 ```
 
@@ -195,13 +197,22 @@ docker run --rm -v meeplix_storage:/data -v $(pwd):/backup alpine tar xzf /backu
 
 ## 🔄 Migrações de Banco
 
+As migrations ficam versionadas em `prisma/migrations/` e são aplicadas automaticamente
+pelo serviço `migrate` do Docker Compose.
+
 ```bash
-# Desenvolvimento
+# Desenvolvimento (cria uma nova migration a partir do schema)
 npm run db:migrate
 
-# Produção (aplicar migrações existentes)
-npx prisma migrate deploy
+# Aplicar migrations existentes (usado pelo container)
+npm run db:deploy
+
+# Forçar a execução manual no Docker
+docker compose run --rm migrate
 ```
+
+> `npm run db:migrate` é interativo e não deve ser usado no container de produção:
+> a imagem final (standalone) não inclui o Prisma CLI.
 
 ## 📝 Licença
 
