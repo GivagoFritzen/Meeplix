@@ -27,13 +27,13 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/meeplix?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: http://localhost:${APP_PORT:-3100}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:${APP_PORT:-3100}}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       STORAGE_PATH: /app/storage
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600}
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Meeplix}
-      NEXT_PUBLIC_APP_URL: http://localhost:${APP_PORT:-3100}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:${APP_PORT:-3100}}
       BGG_API_TOKEN: ${BGG_API_TOKEN}
     volumes:
       - storage:/app/storage

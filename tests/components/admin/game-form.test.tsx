@@ -466,6 +466,27 @@ describe("GameForm - edição", () => {
     );
   });
 
+  it("salva a edição mesmo quando o toast de sucesso falha", async () => {
+    const onSaved = vi.fn();
+    mocks.fetch
+      .mockResolvedValueOnce(response(gameData))
+      .mockResolvedValueOnce(response({ id: "game-1" }));
+    mocks.toast.mockImplementationOnce(() => {
+      throw new Error("toast indisponível");
+    });
+    const { container } = render(
+      <GameForm gameId="game-1" onClose={vi.fn()} onSaved={onSaved} />
+    );
+
+    await screen.findByText("Editando Jogo");
+    fireEvent.change(container.querySelector<HTMLInputElement>('input[name="name"]')!, {
+      target: { value: "Catan Novo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Salvar Alterações/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+  });
+
   it("exclui o jogo após confirmação", async () => {
     const onDeleted = vi.fn();
     mocks.fetch

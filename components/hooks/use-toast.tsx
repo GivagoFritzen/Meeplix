@@ -19,11 +19,21 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+let toastIdCounter = 0;
+
+function createToastId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  toastIdCounter += 1;
+  return `toast-${Date.now()}-${toastIdCounter}`;
+}
+
 export function ToastProviderWrapper({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const toast = useCallback(({ title, description, variant = "default" }: ToastOptions) => {
-    const id = crypto.randomUUID();
+    const id = createToastId();
     setToasts((prev) => [...prev, { id, title, description, variant }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));

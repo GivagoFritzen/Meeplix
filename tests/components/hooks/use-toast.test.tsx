@@ -50,6 +50,15 @@ describe("ToastProviderWrapper", () => {
     expect(screen.getByText("Jogo atualizado")).toBeInTheDocument();
   });
 
+  it("exibe toast quando crypto.randomUUID não está disponível", () => {
+    vi.stubGlobal("crypto", {});
+    renderWithProvider(<Trigger title="Sem randomUUID" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "disparar" }));
+
+    expect(screen.getByText("Sem randomUUID")).toBeInTheDocument();
+  });
+
   it("exibe toast sem descrição", () => {
     renderWithProvider(<Trigger title="Somente título" />);
 

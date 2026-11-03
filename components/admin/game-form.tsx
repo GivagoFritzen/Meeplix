@@ -1800,12 +1800,12 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
         await applyPendingDeletions();
       }
 
+      onSaved();
       toast({
         title: "Sucesso",
         description: isNew ? "Jogo criado com sucesso" : "Jogo atualizado com sucesso",
         variant: "success",
       });
-      onSaved();
     } catch (error) {
       console.error("Submit error:", error);
       toast({ title: "Erro", description: getErrorMessage(error), variant: "destructive" });
@@ -1824,8 +1824,8 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
         throw new Error(data.error || "Erro ao excluir jogo");
       }
       setShowDeleteConfirm(false);
-      toast({ title: "Sucesso", description: "Jogo excluído com sucesso", variant: "success" });
       (onDeleted ?? onClose)();
+      toast({ title: "Sucesso", description: "Jogo excluído com sucesso", variant: "success" });
     } catch (error) {
       console.error("Delete error:", error);
       const message = error instanceof Error ? error.message : "Erro ao excluir jogo";
