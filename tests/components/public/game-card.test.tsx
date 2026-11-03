@@ -103,6 +103,11 @@ describe("GameCard", () => {
     expect(screen.queryByText("Tile Placement")).not.toBeInTheDocument();
   });
 
+  it("exibe badge de fixado quando isActive é true", () => {
+    render(<GameCard {...baseProps} isActive={true} />);
+    expect(screen.getByText("Fixado")).toBeInTheDocument();
+  });
+
   it("usa slug do nome para o link", () => {
     const { container } = render(<GameCard {...baseProps} />);
     const link = container.querySelector("a");

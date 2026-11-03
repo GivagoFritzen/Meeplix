@@ -57,6 +57,7 @@ export function GameDetailTabs({ game }: { game: Game }) {
 
   useEffect(() => {
     if (!tabs.some((t) => t.id === activeTab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- garante uma aba válida após mudança de props
       setActiveTab("resumo");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

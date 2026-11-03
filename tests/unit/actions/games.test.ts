@@ -7,16 +7,20 @@ import {
   getGameById,
   getGameBySlug,
   searchGames,
+  toggleGameActive,
 } from "@/app/actions/games";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   revalidatePath: vi.fn(),
+  transaction: vi.fn((fns) => Promise.all(fns)),
   game: {
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
     findMany: vi.fn(),
+    findFirst: vi.fn(),
     findUnique: vi.fn(),
     count: vi.fn(),
   },
@@ -28,8 +32,14 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: { game: mocks.game },
-  default: { game: mocks.game },
+  prisma: {
+    game: mocks.game,
+    $transaction: mocks.transaction,
+  },
+  default: {
+    game: mocks.game,
+    $transaction: mocks.transaction,
+  },
 }));
 
 vi.mock("next/cache", () => ({
@@ -58,6 +68,7 @@ function buildDbGame(overrides: Record<string, unknown> = {}) {
     bggRating: null,
     ludoRating: null,
     weight: null,
+    isActive: false,
     files: [],
     ...overrides,
   };
@@ -66,6 +77,7 @@ function buildDbGame(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
+  mocks.game.findFirst.mockResolvedValue(null);
 });
 
 describe("createGame", () => {
@@ -271,6 +283,88 @@ describe("getGames", () => {
         take: 10,
       })
     );
+  });
+
+  it("retorna o jogo ativo fixado como primeiro mesmo se não bater com o filtro selecionado", async () => {
+    const activeGame = buildDbGame({ id: "active-1", name: "Jogo Ativo", isActive: true });
+    const regularGame = buildDbGame({ id: "game-2", name: "Catan", isActive: false });
+
+    mocks.game.findFirst.mockResolvedValue(activeGame);
+    // count com id do ativo (verifica se bate com o filtro) -> 0 (não bate)
+    // count matching total -> 1
+    mocks.game.count
+      .mockResolvedValueOnce(0) // activeMatchesCount
+      .mockResolvedValueOnce(1); // totalMatching
+    mocks.game.findMany.mockResolvedValue([regularGame]);
+
+    const result = await getGames({ search: "catan" });
+
+    expect(result.games[0].id).toBe("active-1");
+    expect(result.games[0].isActive).toBe(true);
+    expect(result.games[1].id).toBe("game-2");
+    expect(result.total).toBe(2); // 1 matching + 1 active
+  });
+
+  it("não duplica o jogo ativo quando ele corresponde ao filtro selecionado", async () => {
+    const activeGame = buildDbGame({ id: "active-1", name: "Catan", isActive: true });
+    const regularGame = buildDbGame({ id: "game-2", name: "Catan: Seafarers", isActive: false });
+
+    mocks.game.findFirst.mockResolvedValue(activeGame);
+    // activeMatchesCount -> 1 (bate)
+    // totalMatching -> 2 (ambos batem)
+    mocks.game.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(2);
+    mocks.game.findMany.mockResolvedValue([regularGame]);
+
+    const result = await getGames({ search: "catan" });
+
+    expect(result.games).toHaveLength(2);
+    expect(result.games[0].id).toBe("active-1");
+    expect(result.games[1].id).toBe("game-2");
+    expect(result.total).toBe(2);
+  });
+});
+
+describe("toggleGameActive", () => {
+  it("exige usuário autenticado", async () => {
+    mocks.getCurrentUser.mockResolvedValue(null);
+    await expect(toggleGameActive("game-1", true)).rejects.toThrow("Não autorizado");
+  });
+
+  it("ativa um jogo desativando outros jogos e revalidando caminhos", async () => {
+    mocks.game.updateMany.mockResolvedValue({ count: 1 });
+    mocks.game.update.mockResolvedValue(buildDbGame({ id: "game-1", name: "Catan", isActive: true }));
+    mocks.game.findUnique.mockResolvedValue({ name: "Catan" });
+
+    const result = await toggleGameActive("game-1", true);
+
+    expect(result).toEqual({ success: true, isActive: true });
+    expect(mocks.game.updateMany).toHaveBeenCalledWith({
+      where: { isActive: true },
+      data: { isActive: false },
+    });
+    expect(mocks.game.update).toHaveBeenCalledWith({
+      where: { id: "game-1" },
+      data: { isActive: true },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/colecao");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/jogos/catan");
+  });
+
+  it("desativa um jogo com sucesso", async () => {
+    mocks.game.update.mockResolvedValue(buildDbGame({ id: "game-1", name: "Catan", isActive: false }));
+    mocks.game.findUnique.mockResolvedValue({ name: "Catan" });
+
+    const result = await toggleGameActive("game-1", false);
+
+    expect(result).toEqual({ success: true, isActive: false });
+    expect(mocks.game.updateMany).not.toHaveBeenCalled();
+    expect(mocks.game.update).toHaveBeenCalledWith({
+      where: { id: "game-1" },
+      data: { isActive: false },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/colecao");
   });
 });
 

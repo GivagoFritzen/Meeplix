@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 
 describe("lib/prisma", () => {
   it("exporta a mesma instância como named e default", async () => {
-    const module = await import("@/lib/prisma");
+    const prismaModule = await import("@/lib/prisma");
 
-    expect(module.default).toBe(module.prisma);
-    expect(typeof module.prisma.game.findMany).toBe("function");
+    expect(prismaModule.default).toBe(prismaModule.prisma);
+    expect(typeof prismaModule.prisma.game.findMany).toBe("function");
   });
 
   it("reutiliza a instância global fora de produção", async () => {

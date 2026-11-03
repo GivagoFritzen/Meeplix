@@ -9,15 +9,16 @@ import { GameplayMetricsCards } from "@/components/public/gameplay-metrics-cards
 import { PreferenceGate } from "@/components/public/preference-gate";
 import { GameDetailTabs } from "../game-detail-tabs";
 import { GameEditButton } from "@/components/public/game-edit-button";
+import { GameActiveToggle } from "@/components/public/game-active-toggle";
 import { auth } from "@/lib/auth";
 import { resolveAssetUrl, getLabelFromValue, formatRating, formatPlaytime, formatPlayers, formatPlayersCompact, formatWeight, getComplexityLabel, slugify } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 interface GamePageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 type GameDetail = NonNullable<Awaited<ReturnType<typeof getGameBySlug>>>;
@@ -136,6 +137,17 @@ function MobileGameHero({
           />
         )}
       </div>
+
+      {/* Botão Slide de Ativação (Mobile) - visível apenas para admin */}
+      {isAdmin && (
+        <div className="w-full flex justify-center">
+          <GameActiveToggle
+            gameId={game.id}
+            initialActive={Boolean(game.isActive)}
+            gameName={game.name}
+          />
+        </div>
+      )}
 
       {/* Título e créditos */}
       <div className="w-full space-y-2 text-center">
@@ -281,8 +293,8 @@ function MobileGameHero({
   );
 }
 
-export async function generateMetadata({ params }: GamePageProps): Promise<Metadata> {
-  const { slug } = await Promise.resolve(params);
+export async function generateMetadata(props: GamePageProps): Promise<Metadata> {
+  const { slug } = await props.params;
   const game = await getGameBySlug(slug);
 
   if (!game) {
@@ -307,8 +319,8 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
   };
 }
 
-export default async function GameDetailPage({ params }: GamePageProps) {
-  const { slug } = await Promise.resolve(params);
+export default async function GameDetailPage(props: GamePageProps) {
+  const { slug } = await props.params;
   const game = await getGameBySlug(slug);
   const session = await auth();
   const preferences = await getDisplayPreferences();
@@ -472,10 +484,17 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                     )}
                   </div>
                   {session?.user && (
-                    <GameEditButton
-                      gameId={game.id}
-                      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#ff5100]/20 bg-[#ff5100]/10 hover:bg-[#ff5100]/20 text-[#ff5100] text-xs font-medium transition active:scale-[0.98]"
-                    />
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <GameActiveToggle
+                        gameId={game.id}
+                        initialActive={Boolean(game.isActive)}
+                        gameName={game.name}
+                      />
+                      <GameEditButton
+                        gameId={game.id}
+                        className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#ff5100]/20 bg-[#ff5100]/10 hover:bg-[#ff5100]/20 text-[#ff5100] text-xs font-medium transition active:scale-[0.98]"
+                      />
+                    </div>
                   )}
                 </div>
 

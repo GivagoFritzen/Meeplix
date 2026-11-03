@@ -10,6 +10,16 @@ COPY prisma ./prisma/
 
 RUN npm ci
 
+# One-shot migration/seed image (used by the `migrate` compose service)
+FROM deps AS migrator
+WORKDIR /app
+
+COPY prisma ./prisma
+COPY lib ./lib
+COPY tsconfig.json ./
+
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts"]
+
 # Build application
 FROM base AS builder
 WORKDIR /app

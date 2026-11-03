@@ -82,7 +82,7 @@ async function GameList({ searchParams }: HomePageProps) {
   );
 }
 
-export default async function HomePage({ searchParams }: HomePageProps) {
+export default function HomePage({ searchParams }: HomePageProps) {
   return (
     <>
       <PublicHeader />

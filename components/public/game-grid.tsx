@@ -20,6 +20,7 @@ interface GameGridProps {
     bggRating?: number | null;
     ludoRating?: number | null;
     mechanics?: string[];
+    isActive?: boolean;
   }>;
   className?: string;
   emptyMessage?: string;

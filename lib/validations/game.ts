@@ -48,6 +48,7 @@ const GameCreateBaseSchema = z.object({
   mechanics: z.array(z.string().max(50)).default([]),
   categories: z.array(z.string().max(50)).default([]),
   preparationText: z.string().max(10000).optional().nullable(),
+  isActive: z.boolean().default(false).optional(),
   links: z.object({
     bgg: z.string().url().or(z.literal("")).nullable().optional().transform((v) => (v === "" ? null : v)),
     ludopedia: z.string().url().or(z.literal("")).nullable().optional().transform((v) => (v === "" ? null : v)),
