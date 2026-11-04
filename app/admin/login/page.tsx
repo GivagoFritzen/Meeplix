@@ -75,15 +75,15 @@ export default function AdminLoginPage() {
                 </div>
               )}
               <div className="space-y-1">
-                <Label htmlFor="admin-user">Usuário ou E-mail Admin</Label>
+                <Label htmlFor="email">E-mail</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant">
-                    <span className="material-symbols-outlined text-[20px]">person</span>
+                    <span className="material-symbols-outlined text-[20px]">mail</span>
                   </div>
                   <Input
-                    id="admin-user"
+                    id="email"
                     type="email"
-                    placeholder="ex: admin@meeplix.local"
+                    placeholder="ex: seuemail@exemplo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 pr-4"

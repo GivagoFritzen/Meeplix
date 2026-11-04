@@ -27,7 +27,6 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/meeplix?schema=public
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      ADMIN_NAME: ${ADMIN_NAME}
     depends_on:
       db:
         condition: service_healthy

@@ -35,6 +35,8 @@ const validCreateBody = {
   minPlaytime: 60,
   bestPlayers: 4,
   minAge: 10,
+  bggRating: 7.8,
+  bggRank: 200,
 };
 
 function jsonRequest(url: string, method: string, body: unknown) {

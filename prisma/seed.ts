@@ -4,7 +4,6 @@ import { hashPassword } from "../lib/auth-utils";
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || "admin@meeplix.local";
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  const adminName = process.env.ADMIN_NAME || "Administrador";
 
   console.log("🌱 Iniciando seed do banco de dados...");
 
@@ -21,13 +20,11 @@ async function main() {
       data: {
         email: adminEmail,
         passwordHash,
-        name: adminName,
       },
     });
 
     console.log("✅ Usuário admin criado com sucesso!");
     console.log(`   E-mail: ${admin.email}`);
-    console.log(`   Nome: ${admin.name}`);
     console.log(`   ID: ${admin.id}`);
     console.log("");
   }

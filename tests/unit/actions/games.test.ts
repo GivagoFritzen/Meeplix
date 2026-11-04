@@ -53,6 +53,8 @@ const validCreateInput = {
   minPlaytime: 60,
   bestPlayers: 4,
   minAge: 10,
+  bggRating: 7.8,
+  bggRank: 200,
   mechanics: [],
   categories: [],
 };
@@ -297,7 +299,7 @@ describe("getGames", () => {
       .mockResolvedValueOnce(1); // totalMatching
     mocks.game.findMany.mockResolvedValue([regularGame]);
 
-    const result = await getGames({ search: "catan" });
+    const result = await getGames({ search: "catan", page: 1, limit: 10 });
 
     expect(result.games[0].id).toBe("active-1");
     expect(result.games[0].isActive).toBe(true);
@@ -317,7 +319,7 @@ describe("getGames", () => {
       .mockResolvedValueOnce(2);
     mocks.game.findMany.mockResolvedValue([regularGame]);
 
-    const result = await getGames({ search: "catan" });
+    const result = await getGames({ search: "catan", page: 1, limit: 10 });
 
     expect(result.games).toHaveLength(2);
     expect(result.games[0].id).toBe("active-1");

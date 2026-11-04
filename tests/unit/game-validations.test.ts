@@ -13,6 +13,10 @@ const validGame = {
   minPlaytime: 60,
   bestPlayers: 4,
   minAge: 10,
+  bggRating: 7.8,
+  bggRank: 200,
+  ludoRating: 8.2,
+  ludoRank: 10,
 };
 
 describe("GameCreateSchema", () => {
@@ -40,8 +44,8 @@ describe("GameCreateSchema", () => {
     const parsed = GameCreateSchema.parse({
       ...validGame,
       year: Number.NaN,
+      bggRating: Number.NaN,
       bggRank: Number.NaN,
-      ludoRank: Number.NaN,
       interaction: Number.NaN,
       luck: Number.NaN,
       downtime: Number.NaN,
@@ -49,12 +53,72 @@ describe("GameCreateSchema", () => {
     });
 
     expect(parsed.year).toBeUndefined();
+    expect(parsed.bggRating).toBeUndefined();
     expect(parsed.bggRank).toBeUndefined();
-    expect(parsed.ludoRank).toBeUndefined();
     expect(parsed.interaction).toBeUndefined();
     expect(parsed.luck).toBeUndefined();
     expect(parsed.downtime).toBeUndefined();
     expect(parsed.replayability).toBeUndefined();
+  });
+
+  it("aceita somente o par de notas e rankings da Ludopedia", () => {
+    const parsed = GameCreateSchema.parse({
+      ...validGame,
+      bggRating: undefined,
+      bggRank: undefined,
+    });
+
+    expect(parsed.ludoRating).toBe(8.2);
+    expect(parsed.ludoRank).toBe(10);
+    expect(parsed.bggRating).toBeUndefined();
+    expect(parsed.bggRank).toBeUndefined();
+  });
+
+  it("aceita somente o par de notas e rankings do BGG", () => {
+    const parsed = GameCreateSchema.parse({
+      ...validGame,
+      ludoRating: undefined,
+      ludoRank: undefined,
+    });
+
+    expect(parsed.bggRating).toBe(7.8);
+    expect(parsed.bggRank).toBe(200);
+    expect(parsed.ludoRating).toBeUndefined();
+    expect(parsed.ludoRank).toBeUndefined();
+  });
+
+  it("rejeita quando nenhum par de nota e ranking está completo", () => {
+    const result = GameCreateSchema.safeParse({
+      ...validGame,
+      bggRating: undefined,
+      bggRank: undefined,
+      ludoRating: undefined,
+      ludoRank: undefined,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejeita nota sem ranking na mesma fonte", () => {
+    const result = GameCreateSchema.safeParse({
+      ...validGame,
+      ludoRating: undefined,
+      ludoRank: undefined,
+      bggRank: undefined,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejeita ranking sem nota na mesma fonte", () => {
+    const result = GameCreateSchema.safeParse({
+      ...validGame,
+      ludoRating: undefined,
+      ludoRank: undefined,
+      bggRating: undefined,
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it("rejeita NaN em campos obrigatórios", () => {

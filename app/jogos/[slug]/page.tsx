@@ -94,6 +94,9 @@ function MobileGameHero({
   preferences: DisplayPreferences;
   isAdmin: boolean;
 }) {
+  const hasLudoRating = Boolean(game.ludoRating);
+  const hasBggRating = Boolean(game.bggRating);
+
   return (
     <div
       className="flex flex-col items-center gap-5 p-4"
@@ -181,47 +184,53 @@ function MobileGameHero({
       </div>
 
       {/* Rankings Ludopedia & BGG */}
-      <div className="grid w-full grid-cols-2 gap-3">
-        <div className="flex flex-col justify-between rounded-2xl border border-[#fae2a6] bg-gradient-to-b from-[#fffcf2] to-[#fffaf0] p-3">
-          <div className="flex items-center justify-between">
-            <span className="rounded bg-[#f59e0b] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
-              Ludopedia
-            </span>
-            <div className="flex items-center gap-1">
-              <StarIcon className="h-3 w-3 fill-[#f59e0b] text-[#f59e0b]" />
-              <span className="text-sm font-extrabold text-slate-800">
-                {game.ludoRating ? formatRating(game.ludoRating) : "-"}
-              </span>
+      {(hasLudoRating || hasBggRating) && (
+        <div className={`grid w-full gap-3 ${hasLudoRating && hasBggRating ? "grid-cols-2" : "grid-cols-1"}`}>
+          {hasLudoRating && (
+            <div className="flex flex-col justify-between rounded-2xl border border-[#fae2a6] bg-gradient-to-b from-[#fffcf2] to-[#fffaf0] p-3">
+              <div className="flex items-center justify-between">
+                <span className="rounded bg-[#f59e0b] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
+                  Ludopedia
+                </span>
+                <div className="flex items-center gap-1">
+                  <StarIcon className="h-3 w-3 fill-[#f59e0b] text-[#f59e0b]" />
+                  <span className="text-sm font-extrabold text-slate-800">
+                    {formatRating(game.ludoRating)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-1 text-left">
+                <span className="text-[9.5px] font-medium text-slate-500">Rank</span>
+                <span className="text-[11px] font-bold text-slate-700">
+                  {game.ludoRank ? `#${game.ludoRank}` : "—"}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-1 text-left">
-            <span className="text-[9.5px] font-medium text-slate-500">Rank</span>
-            <span className="text-[11px] font-bold text-slate-700">
-              {game.ludoRank ? `#${game.ludoRank}` : "—"}
-            </span>
-          </div>
-        </div>
+          )}
 
-        <div className="flex flex-col justify-between rounded-2xl border border-[#fed7aa] bg-gradient-to-b from-[#fffcf8] to-[#fff7f0] p-3">
-          <div className="flex items-center justify-between">
-            <span className="rounded bg-[#ea580c] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
-              BGG
-            </span>
-            <div className="flex items-center gap-1">
-              <StarIcon className="h-3 w-3 fill-[#ea580c] text-[#ea580c]" />
-              <span className="text-sm font-extrabold text-slate-800">
-                {game.bggRating ? formatRating(game.bggRating) : "-"}
-              </span>
+          {hasBggRating && (
+            <div className="flex flex-col justify-between rounded-2xl border border-[#fed7aa] bg-gradient-to-b from-[#fffcf8] to-[#fff7f0] p-3">
+              <div className="flex items-center justify-between">
+                <span className="rounded bg-[#ea580c] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
+                  BGG
+                </span>
+                <div className="flex items-center gap-1">
+                  <StarIcon className="h-3 w-3 fill-[#ea580c] text-[#ea580c]" />
+                  <span className="text-sm font-extrabold text-slate-800">
+                    {formatRating(game.bggRating)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-1 text-left">
+                <span className="text-[9.5px] font-medium text-slate-500">Rank</span>
+                <span className="text-[11px] font-bold text-slate-700">
+                  {game.bggRank ? `#${game.bggRank}` : "—"}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-1 text-left">
-            <span className="text-[9.5px] font-medium text-slate-500">Rank</span>
-            <span className="text-[11px] font-bold text-slate-700">
-              {game.bggRank ? `#${game.bggRank}` : "—"}
-            </span>
-          </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Métricas essenciais */}
       <div className="grid w-full grid-cols-2 gap-2.5">
@@ -337,6 +346,8 @@ export default async function GameDetailPage(props: GamePageProps) {
 
   const coverUrl = resolveAssetUrl(game.coverImage);
   const complexity = game.weight ? getComplexityLabel(game.weight) : null;
+  const hasLudoRating = Boolean(game.ludoRating);
+  const hasBggRating = Boolean(game.bggRating);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col selection:bg-orange-500/20 selection:text-orange-900 antialiased">
@@ -643,55 +654,61 @@ export default async function GameDetailPage(props: GamePageProps) {
               <HeroGameplayMetrics game={game} />
 
               {/* Bottom Evaluation & Rank Strip */}
-              <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-                  {/* Ludopedia Rating & Rank */}
-                  <div className="flex items-center gap-3 p-2 px-3 rounded-xl bg-amber-50/70 border border-amber-200/80">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-white uppercase tracking-wide">
-                        Ludopedia
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <svg className="w-5 h-5 text-amber-500 fill-amber-500" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span className="text-xl font-black text-amber-950">
-                          {game.ludoRating ? formatRating(game.ludoRating) : "-"}
-                        </span>
+              {(hasLudoRating || hasBggRating) && (
+                <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+                    {/* Ludopedia Rating & Rank */}
+                    {hasLudoRating && (
+                      <div className="flex items-center gap-3 p-2 px-3 rounded-xl bg-amber-50/70 border border-amber-200/80">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-white uppercase tracking-wide">
+                            Ludopedia
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <svg className="w-5 h-5 text-amber-500 fill-amber-500" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            <span className="text-xl font-black text-amber-950">
+                              {formatRating(game.ludoRating)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="border-l border-amber-200/80 pl-2.5 text-xs text-amber-900/80">
+                          <p className="font-medium text-amber-950">Ludopedia</p>
+                          {game.ludoRank && (
+                            <p className="text-[11px] text-amber-800">Rank #{game.ludoRank}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="border-l border-amber-200/80 pl-2.5 text-xs text-amber-900/80">
-                      <p className="font-medium text-amber-950">Ludopedia</p>
-                      {game.ludoRank && (
-                        <p className="text-[11px] text-amber-800">Rank #{game.ludoRank}</p>
-                      )}
-                    </div>
-                  </div>
+                    )}
 
-                  {/* BGG Scraped Rating & Rank */}
-                  <div className="flex items-center gap-3 p-2 px-3 rounded-xl bg-orange-50/70 border border-orange-200/80">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-[#ff5100] text-white uppercase tracking-wider">
-                        BGG
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <svg className="w-5 h-5 text-[#ff5100] fill-[#ff5100]" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span className="text-xl font-black text-orange-950">
-                          {game.bggRating ? formatRating(game.bggRating) : "-"}
-                        </span>
+                    {/* BGG Scraped Rating & Rank */}
+                    {hasBggRating && (
+                      <div className="flex items-center gap-3 p-2 px-3 rounded-xl bg-orange-50/70 border border-orange-200/80">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-[#ff5100] text-white uppercase tracking-wider">
+                            BGG
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <svg className="w-5 h-5 text-[#ff5100] fill-[#ff5100]" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            <span className="text-xl font-black text-orange-950">
+                              {formatRating(game.bggRating)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="border-l border-orange-200/80 pl-2.5 text-xs">
+                          <p className="text-orange-950 font-medium">BoardGameGeek</p>
+                          {game.bggRank && (
+                            <p className="text-[11px] text-orange-800">Rank #{game.bggRank}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="border-l border-orange-200/80 pl-2.5 text-xs">
-                      <p className="text-orange-950 font-medium">BoardGameGeek</p>
-                      {game.bggRank && (
-                        <p className="text-[11px] text-orange-800">Rank #{game.bggRank}</p>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </section>

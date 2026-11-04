@@ -116,6 +116,36 @@ function fillName(container: HTMLElement, value: string) {
   fireEvent.change(input, { target: { value } });
 }
 
+function fillRequiredFields(container: HTMLElement) {
+  const fields: Array<[string, string]> = [
+    ["minPlayers", "1"],
+    ["maxPlayers", "4"],
+    ["minPlaytime", "30"],
+    ["minAge", "10"],
+  ];
+  for (const [name, value] of fields) {
+    const input = container.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+    if (!input) throw new Error(`Campo ${name} não encontrado`);
+    fireEvent.change(input, { target: { value } });
+  }
+}
+
+function fillBggRatingPair(container: HTMLElement) {
+  const rating = container.querySelector<HTMLInputElement>('input[name="bggRating"]');
+  const rank = container.querySelector<HTMLInputElement>('input[name="bggRank"]');
+  if (!rating || !rank) throw new Error("Campos de nota/ranking do BGG não encontrados");
+  fireEvent.change(rating, { target: { value: "8.1" } });
+  fireEvent.change(rank, { target: { value: "100" } });
+}
+
+function fillLudoRatingPair(container: HTMLElement) {
+  const rating = container.querySelector<HTMLInputElement>('input[name="ludoRating"]');
+  const rank = container.querySelector<HTMLInputElement>('input[name="ludoRank"]');
+  if (!rating || !rank) throw new Error("Campos de nota/ranking da Ludopedia não encontrados");
+  fireEvent.change(rating, { target: { value: "8.4" } });
+  fireEvent.change(rank, { target: { value: "50" } });
+}
+
 let errorSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
@@ -154,6 +184,42 @@ describe("GameForm - novo jogo", () => {
     expect(screen.queryByRole("button", { name: "Excluir Jogo" })).not.toBeInTheDocument();
   });
 
+  it("inicia novo jogo com todos os campos vazios", () => {
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+
+    const fieldNames = [
+      "name",
+      "year",
+      "minPlayers",
+      "maxPlayers",
+      "minPlaytime",
+      "bestPlayers",
+      "minAge",
+      "designer",
+      "publisher",
+      "artist",
+      "description",
+      "bggRating",
+      "ludoRating",
+      "bggRank",
+      "ludoRank",
+      "interaction",
+      "luck",
+      "downtime",
+      "replayability",
+    ];
+
+    for (const name of fieldNames) {
+      const field = container.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[name="${name}"]`
+      );
+      expect(field).toBeInTheDocument();
+      expect(field?.value).toBe("");
+    }
+  });
+
   it("fecha o formulário", () => {
     const onClose = vi.fn();
     render(<GameForm gameId="new" onClose={onClose} onSaved={vi.fn()} />);
@@ -173,8 +239,159 @@ describe("GameForm - novo jogo", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
 
-    expect(await screen.findByText("Nome é obrigatório")).toBeInTheDocument();
+    expect(await screen.findAllByText("Campo obrigatório")).not.toHaveLength(0);
     expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("desativa a validação nativa do navegador", () => {
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+
+    expect(container.querySelector("form")?.noValidate).toBe(true);
+    expect(container.querySelector<HTMLInputElement>('input[name="name"]')).not.toHaveAttribute(
+      "required"
+    );
+  });
+
+  it("deixa campos obrigatórios vermelhos até serem corrigidos", async () => {
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+    const form = container.querySelector("form");
+    if (!form) throw new Error("Formulário não encontrado");
+
+    const nameInput = container.querySelector<HTMLInputElement>('input[name="name"]')!;
+    const minPlayersInput = container.querySelector<HTMLInputElement>('input[name="minPlayers"]')!;
+    const minPlaytimeInput = container.querySelector<HTMLInputElement>(
+      'input[name="minPlaytime"]'
+    )!;
+    const minAgeInput = container.querySelector<HTMLInputElement>('input[name="minAge"]')!;
+
+    fireEvent.change(minPlayersInput, { target: { value: "" } });
+    fireEvent.change(minPlaytimeInput, { target: { value: "" } });
+    fireEvent.change(minAgeInput, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
+
+    expect(await screen.findAllByText("Campo obrigatório")).not.toHaveLength(0);
+    expect(nameInput).toHaveClass("border-error");
+    expect(minPlayersInput).toHaveClass("border-error");
+    expect(minPlaytimeInput).toHaveClass("border-error");
+    expect(minAgeInput).toHaveClass("border-error");
+
+    fillName(container, "Catan");
+    fireEvent.change(minPlayersInput, { target: { value: "2" } });
+    fireEvent.change(minPlaytimeInput, { target: { value: "30" } });
+    fireEvent.change(minAgeInput, { target: { value: "10" } });
+
+    await waitFor(() => expect(nameInput).not.toHaveClass("border-error"));
+    expect(minPlayersInput).not.toHaveClass("border-error");
+    expect(minPlaytimeInput).not.toHaveClass("border-error");
+    expect(minAgeInput).not.toHaveClass("border-error");
+  });
+
+  it("destaca os quatro campos quando nota e ranking não foram informados", async () => {
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+
+    fillName(container, "Catan");
+    fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
+
+    expect(
+      await screen.findByText("Campo obrigatório: informe nota e ranking do BGG ou da Ludopedia.")
+    ).toBeInTheDocument();
+
+    const ratingInputs = [
+      'input[name="bggRating"]',
+      'input[name="ludoRating"]',
+      'input[name="bggRank"]',
+      'input[name="ludoRank"]',
+    ].map((selector) => container.querySelector<HTMLInputElement>(selector)!);
+
+    ratingInputs.forEach((input) => expect(input).toHaveClass("border-error"));
+
+    fillBggRatingPair(container);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Campo obrigatório: informe nota e ranking do BGG ou da Ludopedia.")
+      ).not.toBeInTheDocument()
+    );
+    ratingInputs.forEach((input) => expect(input).not.toHaveClass("border-error"));
+  });
+
+  it("permite salvar sem informar o campo melhor com", async () => {
+    const onSaved = vi.fn();
+    mocks.fetch.mockResolvedValue(response({ id: "game-1" }));
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={onSaved} />
+    );
+
+    fillName(container, "Catan");
+    fillBggRatingPair(container);
+    fillRequiredFields(container);
+    const bestPlayersInput = container.querySelector<HTMLInputElement>(
+      'input[name="bestPlayers"]'
+    )!;
+    fireEvent.change(bestPlayersInput, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(bestPlayersInput).not.toHaveClass("border-error");
+  });
+
+  it("exige ao menos um par de nota e ranking", async () => {
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+    const form = container.querySelector("form");
+    if (!form) throw new Error("Formulário não encontrado");
+    form.noValidate = true;
+
+    fillName(container, "Catan");
+    fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
+
+    expect(
+      await screen.findByText("Campo obrigatório: informe nota e ranking do BGG ou da Ludopedia.")
+    ).toBeInTheDocument();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia nota sem ranking na mesma fonte", async () => {
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+    const form = container.querySelector("form");
+    if (!form) throw new Error("Formulário não encontrado");
+    form.noValidate = true;
+
+    fillName(container, "Catan");
+    fireEvent.change(container.querySelector<HTMLInputElement>('input[name="bggRating"]')!, {
+      target: { value: "8.1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
+
+    expect(
+      await screen.findByText("Campo obrigatório: informe o ranking do BGG para completar o par.")
+    ).toBeInTheDocument();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("salva com apenas o par da Ludopedia", async () => {
+    const onSaved = vi.fn();
+    mocks.fetch.mockResolvedValue(response({ id: "game-1" }));
+    const { container } = render(
+      <GameForm gameId="new" onClose={vi.fn()} onSaved={onSaved} />
+    );
+
+    fillName(container, "Catan");
+    fillLudoRatingPair(container);
+    fillRequiredFields(container);
+    fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(mocks.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("cria o jogo e chama onSaved", async () => {
@@ -185,14 +402,19 @@ describe("GameForm - novo jogo", () => {
     );
 
     fillName(container, "Catan");
+    fillBggRatingPair(container);
+    fillRequiredFields(container);
     fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
 
     const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body));
     expect(url).toBe("/api/admin/games");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Catan" });
+    expect(body).toMatchObject({ name: "Catan" });
+    expect(body).not.toHaveProperty("weight");
+    expect(body).not.toHaveProperty("bestPlayers");
     expect(mocks.toast).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Sucesso", variant: "success" })
     );
@@ -206,6 +428,8 @@ describe("GameForm - novo jogo", () => {
     );
 
     fillName(container, "Catan");
+    fillBggRatingPair(container);
+    fillRequiredFields(container);
     fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
 
     await waitFor(() =>
@@ -253,6 +477,8 @@ describe("GameForm - novo jogo", () => {
     expect(screen.getByText("trilha.mp3")).toBeInTheDocument();
 
     fillName(container, "Catan");
+    fillBggRatingPair(container);
+    fillRequiredFields(container);
     fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));

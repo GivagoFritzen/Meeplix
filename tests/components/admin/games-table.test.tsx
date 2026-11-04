@@ -130,4 +130,22 @@ describe("GamesTable", () => {
       expect(el).toBeInTheDocument();
     });
   });
+
+  it("não exibe separador quando apenas a nota BGG está preenchida", async () => {
+    renderWithData(mockGames);
+    await waitFor(() =>
+      expect(screen.getAllByText("Jogo Um").length).toBeGreaterThan(0),
+    );
+    expect(screen.getAllByText("★ 7,0").length).toBeGreaterThan(0);
+    expect(screen.queryByText("/")).toBeNull();
+  });
+
+  it("exibe separador quando as duas notas estão preenchidas", async () => {
+    renderWithData([{ ...mockGames[0], ludoRating: 6.5 }] as unknown as typeof mockGames);
+    await waitFor(() =>
+      expect(screen.getAllByText("Jogo Um").length).toBeGreaterThan(0),
+    );
+    expect(screen.getAllByText("★ 6,5").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("/").length).toBeGreaterThan(0);
+  });
 });

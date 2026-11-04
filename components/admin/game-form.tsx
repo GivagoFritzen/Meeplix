@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, type Dispatch, type 
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { GameCreateSchema } from "@/lib/validations/game";
+import { GameCreateSchema, RATING_PAIR_REQUIRED_MESSAGE } from "@/lib/validations/game";
 import { cn, formatFileSize, getComplexityLabel, isAudioFile, resolveAssetUrl } from "@/lib/utils";
 import { deleteGameFiles } from "@/app/actions/files";
 import { useToast } from "@/components/hooks/use-toast";
@@ -156,6 +156,24 @@ function getSubmitLabel(isSubmitting: boolean, isNew: boolean): string {
   return isNew ? "Criar Jogo" : "Salvar Alterações";
 }
 
+function fieldClass(hasError: boolean, base: string): string {
+  return cn(
+    base,
+    hasError
+      ? "border border-error focus:border-error"
+      : "border border-outline-variant focus:border-primary"
+  );
+}
+
+function FieldError({ id, message }: { id?: string; message?: unknown }) {
+  if (!message) return null;
+  return (
+    <div id={id} role="alert" className="text-error text-xs mt-1">
+      {String(message)}
+    </div>
+  );
+}
+
 function mapGameFiles(rawFiles: unknown): ExistingGameFile[] {
   if (!Array.isArray(rawFiles)) return [];
   return rawFiles.map((file: Partial<ExistingGameFile>) => ({
@@ -212,8 +230,8 @@ function buildFormValues(data: RawGameData): GameFormValues {
     publisher: or(data.publisher, ""),
     designer: or(data.designer, ""),
     artist: or(data.artist, ""),
-    bggRating: or(data.bggRating, 0),
-    ludoRating: or(data.ludoRating, 0),
+    bggRating: data.bggRating ?? undefined,
+    ludoRating: data.ludoRating ?? undefined,
     bggRank: data.bggRank,
     ludoRank: data.ludoRank,
     weight: or(data.weight, 2.5),
@@ -250,7 +268,7 @@ function setFormValue<K extends keyof GameFormValues>(
   value: GameFormValues[K] | undefined
 ) {
   if (value !== undefined) {
-    form.setValue(key, value, { shouldDirty: true });
+    form.setValue(key, value, { shouldDirty: true, shouldValidate: true });
   }
 }
 
@@ -260,14 +278,14 @@ function setFormValueIfTruthy<K extends keyof GameFormValues>(
   value: GameFormValues[K] | undefined
 ) {
   if (value) {
-    form.setValue(key, value, { shouldDirty: true });
+    form.setValue(key, value, { shouldDirty: true, shouldValidate: true });
   }
 }
 
 function applyScrapedValues(form: GameFormReturn, data: ScrapedGameData) {
   setFormValueIfTruthy(form, "name", data.name);
   setFormValueIfTruthy(form, "originalName", data.originalName);
-  form.setValue("description", data.description || "", { shouldDirty: true });
+  form.setValue("description", data.description || "", { shouldDirty: true, shouldValidate: true });
   setFormValueIfTruthy(form, "year", data.year);
   setFormValueIfTruthy(form, "minPlayers", data.minPlayers);
   setFormValueIfTruthy(form, "maxPlayers", data.maxPlayers);
@@ -289,8 +307,8 @@ function applyScrapedValues(form: GameFormReturn, data: ScrapedGameData) {
 
 function applyScrapedLinks(form: GameFormReturn, links: ScrapedGameData["links"] | undefined) {
   if (!links) return;
-  if (links.bgg) form.setValue("links.bgg", links.bgg, { shouldDirty: true });
-  if (links.ludopedia) form.setValue("links.ludopedia", links.ludopedia, { shouldDirty: true });
+  if (links.bgg) form.setValue("links.bgg", links.bgg, { shouldDirty: true, shouldValidate: true });
+  if (links.ludopedia) form.setValue("links.ludopedia", links.ludopedia, { shouldDirty: true, shouldValidate: true });
 }
 
 function mapUploadedFile(file: UploadedFileResponse, fallbackType: string): ExistingGameFile {
@@ -388,7 +406,10 @@ function CoverSection({
                       reader.onload = (e) => {
                         const dataUrl = e.target?.result as string;
                         setCoverPreview(dataUrl);
-                        form.setValue("coverImage", dataUrl, { shouldDirty: true });
+                        form.setValue("coverImage", dataUrl, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                         markCoverFileForDeletion();
                       };
                       reader.readAsDataURL(file);
@@ -412,7 +433,10 @@ function CoverSection({
                   type="button"
                   onClick={() => {
                     setCoverPreview(null);
-                    form.setValue("coverImage", "", { shouldDirty: true });
+                    form.setValue("coverImage", "", {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
                     markCoverFileForDeletion();
                   }}
                   disabled={!coverPreview}
@@ -539,6 +563,8 @@ function ScrapeSection({
   setScrapeResults,
   setScrapeStatus,
 }: ScrapeSectionProps) {
+  const bggLinkError = form.formState.errors.links?.bgg?.message;
+
   return (
           <div className="lg:col-span-8 flex flex-col gap-4 rounded-xl bg-surface-container-lowest border border-outline-variant/50 p-4 sm:p-5">
             {/* Título */}
@@ -572,12 +598,21 @@ function ScrapeSection({
                 value={bggUrls}
                 onChange={(e) => {
                   setBggUrls(e.target.value);
-                  form.setValue("links.bgg", e.target.value, { shouldDirty: true });
+                  form.setValue("links.bgg", e.target.value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
                 }}
                 placeholder="Cole URLs/IDs do BGG"
                 rows={1}
-                className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary resize-y font-metric-stat text-sm"
+                aria-invalid={Boolean(bggLinkError)}
+                aria-describedby={bggLinkError ? "game-bgg-link-error" : undefined}
+                className={fieldClass(
+                  Boolean(bggLinkError),
+                  "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-sm text-on-surface placeholder:text-outline focus:outline-none resize-y font-metric-stat text-sm"
+                )}
               />
+              <FieldError id="game-bgg-link-error" message={bggLinkError} />
             </div>
 
             {/* Botão */}
@@ -631,6 +666,8 @@ function ScrapeSection({
 }
 
 function BasicInfoSection({ form }: { form: GameFormReturn }) {
+  const errors = form.formState.errors;
+
   return (
         <div className="pt-2 border-t border-outline-variant/40 space-y-3">
           <h3 className="font-label-lg text-label-lg text-primary flex items-center gap-1.5">
@@ -639,66 +676,110 @@ function BasicInfoSection({ form }: { form: GameFormReturn }) {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Nome do Jogo *</label>
+              <label htmlFor="game-name" className="block font-label-md text-label-md text-on-surface-variant mb-1">Nome do Jogo *</label>
               <input
+                id="game-name"
                 type="text"
                 {...form.register("name")}
-                required
-                className={cn(
-                  "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-md text-on-surface focus:outline-none font-medium",
-                  form.formState.errors.name
-                    ? "border-error focus:border-error"
-                    : "border-outline-variant focus:border-primary"
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? "game-name-error" : undefined}
+                className={fieldClass(
+                  Boolean(errors.name),
+                  "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-md text-on-surface focus:outline-none font-medium"
                 )}
               />
-              {form.formState.errors.name && <p className="text-error text-xs mt-1">{form.formState.errors.name.message}</p>}
+              <FieldError id="game-name-error" message={errors.name?.message} />
             </div>
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Ano</label>
+              <label htmlFor="game-year" className="block font-label-md text-label-md text-on-surface-variant mb-1">Ano</label>
               <input
+                id="game-year"
                 type="number"
                 {...form.register("year", { valueAsNumber: true })}
-                className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary font-metric-stat"
+                aria-invalid={Boolean(errors.year)}
+                aria-describedby={errors.year ? "game-year-error" : undefined}
+                className={fieldClass(
+                  Boolean(errors.year),
+                  "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-md text-on-surface focus:outline-none font-metric-stat"
+                )}
               />
+              <FieldError id="game-year-error" message={errors.year?.message} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Designer(s)</label>
+              <label htmlFor="game-designer" className="block font-label-md text-label-md text-on-surface-variant mb-1">Designer(s)</label>
               <input
+                id="game-designer"
                 type="text"
                 {...form.register("designer")}
-                className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                aria-invalid={Boolean(errors.designer)}
+                aria-describedby={errors.designer ? "game-designer-error" : undefined}
+                className={fieldClass(
+                  Boolean(errors.designer),
+                  "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-sm text-on-surface focus:outline-none"
+                )}
               />
+              <FieldError id="game-designer-error" message={errors.designer?.message} />
             </div>
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Editora / Distribuidora</label>
+              <label htmlFor="game-publisher" className="block font-label-md text-label-md text-on-surface-variant mb-1">Editora / Distribuidora</label>
               <input
+                id="game-publisher"
                 type="text"
                 {...form.register("publisher")}
-                className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                aria-invalid={Boolean(errors.publisher)}
+                aria-describedby={errors.publisher ? "game-publisher-error" : undefined}
+                className={fieldClass(
+                  Boolean(errors.publisher),
+                  "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-sm text-on-surface focus:outline-none"
+                )}
               />
+              <FieldError id="game-publisher-error" message={errors.publisher?.message} />
             </div>
           </div>
           <div>
-            <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Artista</label>
+            <label htmlFor="game-artist" className="block font-label-md text-label-md text-on-surface-variant mb-1">Artista</label>
             <input
+              id="game-artist"
               type="text"
               {...form.register("artist")}
-              className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary"
+              aria-invalid={Boolean(errors.artist)}
+              aria-describedby={errors.artist ? "game-artist-error" : undefined}
+              className={fieldClass(
+                Boolean(errors.artist),
+                "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-sm text-on-surface focus:outline-none"
+              )}
             />
+            <FieldError id="game-artist-error" message={errors.artist?.message} />
           </div>
         </div>
   );
 }
 
 function MetricsSection({ form }: { form: GameFormReturn }) {
+  const errors = form.formState.errors;
+  const bggRatingError = errors.bggRating?.message;
+  const hasPairError = bggRatingError === RATING_PAIR_REQUIRED_MESSAGE;
+  const fieldError = (name: "bggRating" | "ludoRating" | "bggRank" | "ludoRank") =>
+    errors[name]?.message;
+  const hasFieldError = (name: "bggRating" | "ludoRating" | "bggRank" | "ludoRank") =>
+    Boolean(fieldError(name)) || hasPairError;
+
   return (
         <div className="pt-2 border-t border-outline-variant/40 space-y-3">
           <h3 className="font-label-lg text-label-lg text-primary flex items-center gap-1.5">
             <span className="material-symbols-outlined text-base">analytics</span>
             <span>Métricas & Avaliações</span>
           </h3>
+          <p className="text-xs text-on-surface-variant">
+            Preencha nota + ranking de pelo menos uma fonte (Ludopedia ou BGG).
+          </p>
+          {hasPairError && (
+            <div id="game-rating-pair-error" role="alert" className="text-error text-xs font-medium">
+              {RATING_PAIR_REQUIRED_MESSAGE}
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 min-w-0">
             <div className="min-w-0">
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Nota BGG</label>
@@ -712,12 +793,27 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                       onChange={onChange}
                       {...rest}
                       placeholder="8.1"
-                      className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary pr-10"
+                      aria-invalid={hasFieldError("bggRating")}
+                      aria-describedby={
+                        hasPairError
+                          ? "game-rating-pair-error"
+                          : fieldError("bggRating")
+                            ? "game-bgg-rating-error"
+                            : undefined
+                      }
+                      className={fieldClass(
+                        hasFieldError("bggRating"),
+                        "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none pr-10"
+                      )}
                     />
                   );
                 })()}
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
               </div>
+              <FieldError
+                id="game-bgg-rating-error"
+                message={hasPairError ? undefined : String(fieldError("bggRating") ?? "")}
+              />
             </div>
             <div className="min-w-0">
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Nota Ludopedia</label>
@@ -731,12 +827,24 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                       onChange={onChange}
                       {...rest}
                       placeholder="8.4"
-                      className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary pr-10"
+                      aria-invalid={hasFieldError("ludoRating")}
+                      aria-describedby={
+                        hasPairError
+                          ? "game-rating-pair-error"
+                          : fieldError("ludoRating")
+                            ? "game-ludo-rating-error"
+                            : undefined
+                      }
+                      className={fieldClass(
+                        hasFieldError("ludoRating"),
+                        "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none pr-10"
+                      )}
                     />
                   );
                 })()}
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
               </div>
+              <FieldError id="game-ludo-rating-error" message={String(fieldError("ludoRating") ?? "")} />
             </div>
             <div className="min-w-0">
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Ranking BGG</label>
@@ -749,10 +857,22 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                     onChange={onChange}
                     {...rest}
                     placeholder="#27"
-                    className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary"
+                    aria-invalid={hasFieldError("bggRank")}
+                    aria-describedby={
+                      hasPairError
+                        ? "game-rating-pair-error"
+                        : fieldError("bggRank")
+                          ? "game-bgg-rank-error"
+                          : undefined
+                    }
+                    className={fieldClass(
+                      hasFieldError("bggRank"),
+                      "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none"
+                    )}
                   />
                 );
               })()}
+              <FieldError id="game-bgg-rank-error" message={String(fieldError("bggRank") ?? "")} />
             </div>
             <div className="min-w-0">
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Ranking Ludopedia</label>
@@ -765,10 +885,22 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                     onChange={onChange}
                     {...rest}
                     placeholder="#27"
-                    className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary"
+                    aria-invalid={hasFieldError("ludoRank")}
+                    aria-describedby={
+                      hasPairError
+                        ? "game-rating-pair-error"
+                        : fieldError("ludoRank")
+                          ? "game-ludo-rank-error"
+                          : undefined
+                    }
+                    className={fieldClass(
+                      hasFieldError("ludoRank"),
+                      "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none"
+                    )}
                   />
                 );
               })()}
+              <FieldError id="game-ludo-rank-error" message={String(fieldError("ludoRank") ?? "")} />
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
@@ -784,12 +916,18 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                       onChange={onChange}
                       {...rest}
                       placeholder="3.1"
-                      className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary pr-10"
+                      aria-invalid={Boolean(errors.interaction)}
+                      aria-describedby={errors.interaction ? "game-interaction-error" : undefined}
+                      className={fieldClass(
+                        Boolean(errors.interaction),
+                        "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none pr-10"
+                      )}
                     />
                   );
                 })()}
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
               </div>
+              <FieldError id="game-interaction-error" message={errors.interaction?.message} />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Sorte</label>
@@ -803,12 +941,18 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                       onChange={onChange}
                       {...rest}
                       placeholder="3.6"
-                      className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary pr-10"
+                      aria-invalid={Boolean(errors.luck)}
+                      aria-describedby={errors.luck ? "game-luck-error" : undefined}
+                      className={fieldClass(
+                        Boolean(errors.luck),
+                        "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none pr-10"
+                      )}
                     />
                   );
                 })()}
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>casino</span>
               </div>
+              <FieldError id="game-luck-error" message={errors.luck?.message} />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Downtime</label>
@@ -822,12 +966,18 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                       onChange={onChange}
                       {...rest}
                       placeholder="1.1"
-                      className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary pr-10"
+                      aria-invalid={Boolean(errors.downtime)}
+                      aria-describedby={errors.downtime ? "game-downtime-error" : undefined}
+                      className={fieldClass(
+                        Boolean(errors.downtime),
+                        "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none pr-10"
+                      )}
                     />
                   );
                 })()}
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>hourglass_empty</span>
               </div>
+              <FieldError id="game-downtime-error" message={errors.downtime?.message} />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Rejogabilidade</label>
@@ -841,12 +991,18 @@ function MetricsSection({ form }: { form: GameFormReturn }) {
                       onChange={onChange}
                       {...rest}
                       placeholder="4.3"
-                      className="w-full px-3 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none focus:border-primary pr-10"
+                      aria-invalid={Boolean(errors.replayability)}
+                      aria-describedby={errors.replayability ? "game-replayability-error" : undefined}
+                      className={fieldClass(
+                        Boolean(errors.replayability),
+                        "w-full px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-metric-stat text-body-sm focus:outline-none pr-10"
+                      )}
                     />
                   );
                 })()}
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>repeat</span>
               </div>
+              <FieldError id="game-replayability-error" message={errors.replayability?.message} />
             </div>
           </div>
         </div>
@@ -884,18 +1040,16 @@ function TableDetailsSection({
                     onChange={onChange}
                     {...rest}
                     placeholder="1"
-                    className={cn(
-                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none",
-                      form.formState.errors.minPlayers
-                        ? "border-error focus:border-error"
-                        : "border-outline-variant focus:border-primary"
+                    aria-invalid={Boolean(form.formState.errors.minPlayers)}
+                    aria-describedby={form.formState.errors.minPlayers ? "game-min-players-error" : undefined}
+                    className={fieldClass(
+                      Boolean(form.formState.errors.minPlayers),
+                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none"
                     )}
                   />
                 );
               })()}
-              {form.formState.errors.minPlayers ? (
-                <p className="text-error text-xs mt-1">{String(form.formState.errors.minPlayers.message)}</p>
-              ) : null}
+              <FieldError id="game-min-players-error" message={form.formState.errors.minPlayers?.message} />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Máx. Jogadores *</label>
@@ -908,21 +1062,19 @@ function TableDetailsSection({
                     onChange={onChange}
                     {...rest}
                     placeholder="5"
-                    className={cn(
-                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none",
-                      form.formState.errors.maxPlayers
-                        ? "border-error focus:border-error"
-                        : "border-outline-variant focus:border-primary"
+                    aria-invalid={Boolean(form.formState.errors.maxPlayers)}
+                    aria-describedby={form.formState.errors.maxPlayers ? "game-max-players-error" : undefined}
+                    className={fieldClass(
+                      Boolean(form.formState.errors.maxPlayers),
+                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none"
                     )}
                   />
                 );
               })()}
-              {form.formState.errors.maxPlayers ? (
-                <p className="text-error text-xs mt-1">{String(form.formState.errors.maxPlayers.message)}</p>
-              ) : null}
+              <FieldError id="game-max-players-error" message={form.formState.errors.maxPlayers?.message} />
             </div>
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Melhor com *</label>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Melhor com</label>
               {(() => {
                 const { ref, onChange, ...rest } = form.register("bestPlayers", { valueAsNumber: true });
                 return (
@@ -932,18 +1084,16 @@ function TableDetailsSection({
                     onChange={onChange}
                     {...rest}
                     placeholder="3"
-                    className={cn(
-                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none",
-                      form.formState.errors.bestPlayers
-                        ? "border-error focus:border-error"
-                        : "border-outline-variant focus:border-primary"
+                    aria-invalid={Boolean(form.formState.errors.bestPlayers)}
+                    aria-describedby={form.formState.errors.bestPlayers ? "game-best-players-error" : undefined}
+                    className={fieldClass(
+                      Boolean(form.formState.errors.bestPlayers),
+                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none"
                     )}
                   />
                 );
               })()}
-              {form.formState.errors.bestPlayers ? (
-                <p className="text-error text-xs mt-1">{String(form.formState.errors.bestPlayers.message)}</p>
-              ) : null}
+              <FieldError id="game-best-players-error" message={form.formState.errors.bestPlayers?.message} />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Duração (Min) *</label>
@@ -956,18 +1106,16 @@ function TableDetailsSection({
                     onChange={onChange}
                     {...rest}
                     placeholder="40"
-                    className={cn(
-                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none",
-                      form.formState.errors.minPlaytime
-                        ? "border-error focus:border-error"
-                        : "border-outline-variant focus:border-primary"
+                    aria-invalid={Boolean(form.formState.errors.minPlaytime)}
+                    aria-describedby={form.formState.errors.minPlaytime ? "game-min-playtime-error" : undefined}
+                    className={fieldClass(
+                      Boolean(form.formState.errors.minPlaytime),
+                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none"
                     )}
                   />
                 );
               })()}
-              {form.formState.errors.minPlaytime ? (
-                <p className="text-error text-xs mt-1">{String(form.formState.errors.minPlaytime.message)}</p>
-              ) : null}
+              <FieldError id="game-min-playtime-error" message={form.formState.errors.minPlaytime?.message} />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Idade Mín. *</label>
@@ -980,18 +1128,16 @@ function TableDetailsSection({
                     onChange={onChange}
                     {...rest}
                     placeholder="10+"
-                    className={cn(
-                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none",
-                      form.formState.errors.minAge
-                        ? "border-error focus:border-error"
-                        : "border-outline-variant focus:border-primary"
+                    aria-invalid={Boolean(form.formState.errors.minAge)}
+                    aria-describedby={form.formState.errors.minAge ? "game-min-age-error" : undefined}
+                    className={fieldClass(
+                      Boolean(form.formState.errors.minAge),
+                      "w-full px-2.5 py-1.5 bg-surface-container-lowest rounded-lg text-body-sm font-metric-stat text-on-surface focus:outline-none"
                     )}
                   />
                 );
               })()}
-              {form.formState.errors.minAge ? (
-                <p className="text-error text-xs mt-1">{String(form.formState.errors.minAge.message)}</p>
-              ) : null}
+              <FieldError id="game-min-age-error" message={form.formState.errors.minAge?.message} />
             </div>
           </div>
           <div className="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/60">
@@ -1019,6 +1165,8 @@ function TableDetailsSection({
 }
 
 function DescriptionSection({ form }: { form: GameFormReturn }) {
+  const errors = form.formState.errors;
+
   return (
         <div className="pt-2 border-t border-outline-variant/40 space-y-2">
           <h3 className="font-label-lg text-label-lg text-primary flex items-center gap-1.5">
@@ -1026,13 +1174,20 @@ function DescriptionSection({ form }: { form: GameFormReturn }) {
             <span>Resumo do Jogo & Regras</span>
           </h3>
           <div>
-            <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Resumo / Visão Geral das Regras</label>
+            <label htmlFor="game-description" className="block font-label-md text-label-md text-on-surface-variant mb-1">Resumo / Visão Geral das Regras</label>
             <textarea
+              id="game-description"
               {...form.register("description")}
               rows={4}
               placeholder="Descreva o objetivo do jogo, visão geral da rodada ou notas rápidas para ensinar à mesa..."
-              className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary resize-y leading-relaxed"
+              aria-invalid={Boolean(errors.description)}
+              aria-describedby={errors.description ? "game-description-error" : undefined}
+              className={fieldClass(
+                Boolean(errors.description),
+                "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-sm text-on-surface focus:outline-none resize-y leading-relaxed"
+              )}
             />
+            <FieldError id="game-description-error" message={errors.description?.message} />
           </div>
         </div>
   );
@@ -1365,8 +1520,8 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
   const isNew = gameId === "new";
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
-  const [complexity, setComplexity] = useState(2.45);
-  const [complexityLabel, setComplexityLabel] = useState(getComplexityLabel(2.45));
+  const [complexity, setComplexity] = useState(2.5);
+  const [complexityLabel, setComplexityLabel] = useState(getComplexityLabel(2.5));
   const [files, setFiles] = useState<File[]>([]);
   const [audioFiles, setAudioFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<ExistingGameFile[]>([]);
@@ -1396,28 +1551,30 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
 
   const form = useForm<z.infer<typeof GameCreateSchema>>({
     resolver: zodResolver(GameCreateSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
       name: "",
       originalName: "",
       description: "",
-      year: new Date().getFullYear(),
-      minPlayers: 1,
-      maxPlayers: 4,
-      minPlaytime: 30,
+      year: undefined,
+      minPlayers: undefined,
+      maxPlayers: undefined,
+      minPlaytime: undefined,
       publisher: "",
       designer: "",
       artist: "",
-      bggRating: 0,
-      ludoRating: 0,
+      bggRating: undefined,
+      ludoRating: undefined,
       bggRank: undefined,
       ludoRank: undefined,
-      weight: 2.5,
+      weight: undefined,
       interaction: undefined,
       luck: undefined,
       downtime: undefined,
       replayability: undefined,
-      bestPlayers: 2,
-      minAge: 10,
+      bestPlayers: undefined,
+      minAge: undefined,
       coverImage: "",
       mechanics: [],
       categories: [],
@@ -1433,32 +1590,32 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
       name: "",
       originalName: "",
       description: "",
-      year: new Date().getFullYear(),
-      minPlayers: 1,
-      maxPlayers: 4,
-      minPlaytime: 30,
+      year: undefined,
+      minPlayers: undefined,
+      maxPlayers: undefined,
+      minPlaytime: undefined,
       publisher: "",
       designer: "",
       artist: "",
-      bggRating: 0,
-      ludoRating: 0,
+      bggRating: undefined,
+      ludoRating: undefined,
       bggRank: undefined,
       ludoRank: undefined,
-      weight: 2.5,
+      weight: undefined,
       interaction: undefined,
       luck: undefined,
       downtime: undefined,
       replayability: undefined,
-      bestPlayers: 2,
-      minAge: 10,
+      bestPlayers: undefined,
+      minAge: undefined,
       coverImage: "",
       mechanics: [],
       categories: [],
       links: { bgg: "", ludopedia: "", manual: "" },
     });
     setCoverPreview(null);
-    setComplexity(2.45);
-    setComplexityLabel(getComplexityLabel(2.45));
+    setComplexity(2.5);
+    setComplexityLabel(getComplexityLabel(2.5));
     setFiles([]);
     setAudioFiles([]);
     setExistingFiles([]);
@@ -1539,7 +1696,7 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
   const handleComplexityChange = (val: number) => {
     setComplexity(val);
     setComplexityLabel(getComplexityLabel(val));
-    form.setValue("weight", val, { shouldDirty: true });
+    form.setValue("weight", val, { shouldDirty: true, shouldValidate: true });
   };
 
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1586,14 +1743,23 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
       handleComplexityChange(data.weight);
     }
     if (data.coverImage) {
-      form.setValue("coverImage", data.coverImage, { shouldDirty: true });
+      form.setValue("coverImage", data.coverImage, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
       setCoverPreview(data.coverImage);
     }
     if (data.mechanics?.length) {
-      form.setValue("mechanics", data.mechanics, { shouldDirty: true });
+      form.setValue("mechanics", data.mechanics, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
     if (data.categories?.length) {
-      form.setValue("categories", data.categories, { shouldDirty: true });
+      form.setValue("categories", data.categories, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
 
     applyScrapedLinks(form, data.links);
@@ -1855,7 +2021,7 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
           <p className="mt-2 text-on-surface-variant text-body-sm">Carregando dados do jogo...</p>
         </div>
       ) : (
-      <form onSubmit={form.handleSubmit(handleSubmit, (errors) => console.log("Validation errors:", errors))} className="p-space-md md:p-space-lg space-y-space-md flex-1 overflow-y-auto custom-scrollbar">
+      <form noValidate onSubmit={form.handleSubmit(handleSubmit)} className="p-space-md md:p-space-lg space-y-space-md flex-1 overflow-y-auto custom-scrollbar">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
           <CoverSection
             form={form}

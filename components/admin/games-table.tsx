@@ -418,7 +418,7 @@ export function GamesTable({ onEdit, onDelete, editingId, refreshTrigger }: Game
                           )}
                           {game.bggRating && (
                             <>
-                              <span className="text-slate-400">/</span>
+                              {game.ludoRating && <span className="text-slate-400">/</span>}
                               <span className="text-[#2c274b] flex items-center font-bold">★ {formatRating(game.bggRating)}</span>
                             </>
                           )}
