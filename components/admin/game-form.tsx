@@ -1202,6 +1202,35 @@ interface FilesSectionProps {
   handleFilesChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+function PreparationSection({ form }: { form: GameFormReturn }) {
+  const errors = form.formState.errors;
+
+  return (
+        <div className="pt-2 border-t border-outline-variant/40 space-y-2">
+          <h3 className="font-label-lg text-label-lg text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-base">handyman</span>
+            <span>Preparo do Jogo</span>
+          </h3>
+          <div>
+            <label htmlFor="game-preparation" className="block font-label-md text-label-md text-on-surface-variant mb-1">Preparo / Setup da Partida</label>
+            <textarea
+              id="game-preparation"
+              {...form.register("preparationText")}
+              rows={4}
+              placeholder="Descreva a montagem do tabuleiro, distribuição de componentes, cartas iniciais e demais passos para preparar a partida..."
+              aria-invalid={Boolean(errors.preparationText)}
+              aria-describedby={errors.preparationText ? "game-preparation-error" : undefined}
+              className={fieldClass(
+                Boolean(errors.preparationText),
+                "w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-body-sm text-on-surface focus:outline-none resize-y leading-relaxed"
+              )}
+            />
+            <FieldError id="game-preparation-error" message={errors.preparationText?.message} />
+          </div>
+        </div>
+  );
+}
+
 function FilesSection({
   existingFiles,
   files,
@@ -1611,6 +1640,7 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
       coverImage: "",
       mechanics: [],
       categories: [],
+      preparationText: "",
       links: { bgg: "", ludopedia: "", manual: "" },
     });
     setCoverPreview(null);
@@ -2060,6 +2090,8 @@ export function GameForm({ gameId, onClose, onSaved, onDeleted }: GameFormProps)
         />
 
         <DescriptionSection form={form} />
+
+        <PreparationSection form={form} />
 
         <FilesSection
           existingFiles={existingFiles}

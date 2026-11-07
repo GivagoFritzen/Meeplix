@@ -201,6 +201,7 @@ describe("GameForm - novo jogo", () => {
       "publisher",
       "artist",
       "description",
+      "preparationText",
       "bggRating",
       "ludoRating",
       "bggRank",
@@ -404,6 +405,10 @@ describe("GameForm - novo jogo", () => {
     fillName(container, "Catan");
     fillBggRatingPair(container);
     fillRequiredFields(container);
+    fireEvent.change(
+      container.querySelector<HTMLTextAreaElement>('textarea[name="preparationText"]')!,
+      { target: { value: "Monte o tabuleiro" } }
+    );
     fireEvent.click(screen.getByRole("button", { name: /Criar Jogo/ }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
@@ -412,7 +417,7 @@ describe("GameForm - novo jogo", () => {
     const body = JSON.parse(String(init.body));
     expect(url).toBe("/api/admin/games");
     expect(init.method).toBe("POST");
-    expect(body).toMatchObject({ name: "Catan" });
+    expect(body).toMatchObject({ name: "Catan", preparationText: "Monte o tabuleiro" });
     expect(body).not.toHaveProperty("weight");
     expect(body).not.toHaveProperty("bestPlayers");
     expect(mocks.toast).toHaveBeenCalledWith(
@@ -647,6 +652,20 @@ describe("GameForm - edição", () => {
     expect(screen.getByText("manual.pdf")).toBeInTheDocument();
     expect(screen.getByText("trilha.mp3")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Salvar Alterações/ })).toBeDisabled();
+  });
+
+  it("carrega o texto de preparo do jogo", async () => {
+    mocks.fetch.mockResolvedValueOnce(
+      response({ ...gameData, preparationText: "Monte o tabuleiro" })
+    );
+    const { container } = render(
+      <GameForm gameId="game-1" onClose={vi.fn()} onSaved={vi.fn()} />
+    );
+
+    expect(await screen.findByText("Editando Jogo")).toBeInTheDocument();
+    expect(
+      container.querySelector<HTMLTextAreaElement>('textarea[name="preparationText"]')?.value
+    ).toBe("Monte o tabuleiro");
   });
 
   it("avisa quando o carregamento falha", async () => {
