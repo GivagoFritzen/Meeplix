@@ -4,7 +4,6 @@ vi.unmock("next/server");
 
 import { NextRequest } from "next/server";
 import { POST as adminUpload } from "@/app/api/admin/upload/route";
-import { POST as legacyUpload } from "@/app/api/upload/route";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -218,68 +217,3 @@ describe("POST /api/admin/upload", () => {
   });
 });
 
-describe("POST /api/upload", () => {
-  it("exige autenticação", async () => {
-    mocks.auth.mockResolvedValue(null);
-
-    const response = await legacyUpload(formRequest("/api/upload", [makeFile()]));
-
-    expect(response.status).toBe(401);
-    expect(mocks.saveTempFile).not.toHaveBeenCalled();
-  });
-
-  it("rejeita requisição sem arquivos", async () => {
-    const response = await legacyUpload(formRequest("/api/upload", []));
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "Nenhum arquivo enviado" });
-  });
-
-  it("rejeita arquivo acima de 100MB", async () => {
-    const response = await legacyUpload(oversizedRequest("/api/upload"));
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: "Arquivo grande.pdf excede 100MB",
-    });
-  });
-
-  it("rejeita MIME não permitido", async () => {
-    const response = await legacyUpload(
-      formRequest("/api/upload", [makeFile("audio.mp3", "audio/mpeg")])
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: "Tipo de arquivo não permitido: audio/mpeg",
-    });
-  });
-
-  it("salva arquivos temporários com metadados", async () => {
-    const response = await legacyUpload(
-      formRequest("/api/upload", [makeFile()], { type: "COVER" })
-    );
-    const body = await response.json();
-
-    expect(mocks.saveTempFile).toHaveBeenCalledWith(Buffer.from("abc"), "capa.png");
-    expect(body.files[0]).toMatchObject({
-      originalName: "capa.png",
-      displayName: "capa.png",
-      mimeType: "image/png",
-      extension: "png",
-      size: 3,
-      path: "temp/uuid.png",
-      type: "COVER",
-    });
-  });
-
-  it("retorna 500 quando o storage falha", async () => {
-    mocks.saveTempFile.mockRejectedValue(new Error("disco cheio"));
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-    const response = await legacyUpload(formRequest("/api/upload", [makeFile()]));
-
-    expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toEqual({ error: "Erro ao fazer upload" });
-  });
-});

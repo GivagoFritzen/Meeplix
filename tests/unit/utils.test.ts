@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  formatNumber,
   formatRating,
   formatWeight,
   formatPlaytime,
@@ -11,21 +10,8 @@ import {
   resolveAssetUrl,
   isAudioFile,
   slugify,
-  getFileTypeFromExtension,
   formatFileSize,
 } from "@/lib/utils";
-
-describe("utils - formatNumber", () => {
-  it("formata número com separador de milhar", () => {
-    const result = formatNumber(1234);
-    expect(result).toMatch(/1[.,]234/);
-  });
-
-  it("retorna '-' para null/undefined", () => {
-    expect(formatNumber(null)).toBe("-");
-    expect(formatNumber(undefined)).toBe("-");
-  });
-});
 
 describe("utils - formatRating", () => {
   it("formata nota com vírgula ou ponto conforme locale", () => {
@@ -175,21 +161,6 @@ describe("utils - slugify", () => {
     expect(slugify("Cascadia")).toBe("cascadia");
     expect(slugify("Nome com Acentuação")).toBe("nome-com-acentuacao");
     expect(slugify("Título--duplo")).toBe("titulo-duplo");
-  });
-});
-
-describe("utils - getFileTypeFromExtension", () => {
-  it("classifica imagem", () => {
-    expect(getFileTypeFromExtension("jpg")).toBe("IMAGE");
-    expect(getFileTypeFromExtension("png")).toBe("IMAGE");
-  });
-
-  it("classifica pdf como manual", () => {
-    expect(getFileTypeFromExtension("pdf")).toBe("MANUAL");
-  });
-
-  it("classifica desconhecido como OTHER", () => {
-    expect(getFileTypeFromExtension("xyz")).toBe("OTHER");
   });
 });
 

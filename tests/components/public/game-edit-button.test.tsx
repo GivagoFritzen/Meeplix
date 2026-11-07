@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { GameEditButton } from "@/components/public/game-edit-button";
 
 vi.mock("@/components/admin/game-form", () => ({
-  GameForm: ({ onClose, onSaved, onDeleted, gameId }: any) => (
+  GameForm: ({ onClose, onSaved, gameId }: any) => (
     <div data-testid="mock-game-form" data-gameid={gameId}>
       <button onClick={onClose}>Fechar</button>
       <button onClick={onSaved}>Salvar</button>

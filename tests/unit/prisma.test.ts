@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 
 describe("lib/prisma", () => {
-  it("exporta a mesma instância como named e default", async () => {
+  it("exporta a instância como named", async () => {
     const prismaModule = await import("@/lib/prisma");
 
-    expect(prismaModule.default).toBe(prismaModule.prisma);
     expect(typeof prismaModule.prisma.game.findMany).toBe("function");
   });
 

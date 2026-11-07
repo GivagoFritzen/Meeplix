@@ -47,7 +47,7 @@ export const authOptions = {
   ],
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
+export const { handlers, auth, signIn } = NextAuth(authOptions);
 
 export async function getCurrentUser() {
   const session = await auth();

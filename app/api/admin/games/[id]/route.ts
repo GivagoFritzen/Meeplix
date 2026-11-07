@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { GameUpdateSchema } from "@/lib/validations/game";
-import { parseCoverImage, stringifyCoverImage } from "@/lib/cover-image";
+import { buildCoverImageData } from "@/lib/cover-image";
+import { serializeGame } from "@/lib/game-mappers";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
@@ -24,12 +25,7 @@ export async function GET(
     return NextResponse.json({ error: "Jogo não encontrado" }, { status: 404 });
   }
 
-  const serialized = {
-    ...game,
-    files: game.files.map((f) => ({ ...f, size: Number(f.size) })),
-  };
-
-  return NextResponse.json(serialized);
+  return NextResponse.json(serializeGame(game));
 }
 
 export async function PUT(
@@ -47,23 +43,15 @@ export async function PUT(
     const body = await request.json();
     const data = GameUpdateSchema.parse(body);
 
-    let coverImageData: { base64: string; mimeType: string } | null | undefined;
-    let coverImage: string | null | undefined;
-    if (data.coverImage !== undefined) {
-      coverImageData = parseCoverImage(data.coverImage);
-      coverImage = stringifyCoverImage(
-        data.coverImage?.startsWith("data:") ? undefined : data.coverImage ?? null,
-        coverImageData
-      );
-    }
+    const cover = data.coverImage !== undefined ? buildCoverImageData(data.coverImage) : null;
 
     const game = await prisma.game.update({
       where: { id },
       data: {
         ...data,
-        ...(data.coverImage !== undefined && {
-          coverImageData: coverImageData ?? Prisma.JsonNull,
-          coverImage,
+        ...(cover && {
+          coverImageData: cover.coverImageData ?? Prisma.JsonNull,
+          coverImage: cover.coverImage,
         }),
         links: data.links || { bgg: "", ludopedia: "", manual: "" },
       },
@@ -79,7 +67,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();

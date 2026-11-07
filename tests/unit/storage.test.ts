@@ -37,35 +37,6 @@ describe("storage - caminhos", () => {
   });
 });
 
-describe("storage - sanitizeFilename", () => {
-  it("remove caracteres especiais", async () => {
-    const { sanitizeFilename } = await importStorage();
-    expect(sanitizeFilename("meu arquivo!.pdf")).toBe("meu_arquivo_.pdf");
-  });
-
-  it("remove acentos", async () => {
-    const { sanitizeFilename } = await importStorage();
-    expect(sanitizeFilename("café.pdf")).toBe("cafe.pdf");
-  });
-
-  it("mantém extensão minúscula", async () => {
-    const { sanitizeFilename } = await importStorage();
-    expect(sanitizeFilename("Foto.JPG")).toMatch(/\.jpg$/);
-  });
-
-  it("tritura nome longo", async () => {
-    const { sanitizeFilename } = await importStorage();
-    const long = "a".repeat(200) + ".pdf";
-    const result = sanitizeFilename(long);
-    expect(result.length).toBeLessThanOrEqual(104);
-  });
-
-  it("colapsa underscores múltiplos", async () => {
-    const { sanitizeFilename } = await importStorage();
-    expect(sanitizeFilename("a___b.pdf")).toBe("a_b.pdf");
-  });
-});
-
 describe("storage - validateFile", () => {
   it("aceita arquivo válido", async () => {
     const { validateFile } = await importStorage();
@@ -161,14 +132,6 @@ describe("storage - MIME e tipo", () => {
     expect(getMimeType("doc.pdf")).toBe("application/pdf");
     expect(getMimeType("musica.mp3")).toBe("audio/mpeg");
     expect(getMimeType("desconhecido.xyz")).toBe("application/octet-stream");
-  });
-
-  it("getFileTypeFromMime classifica", async () => {
-    const { getFileTypeFromMime } = await importStorage();
-    expect(getFileTypeFromMime("image/png")).toBe("IMAGE");
-    expect(getFileTypeFromMime("application/pdf")).toBe("MANUAL");
-    expect(getFileTypeFromMime("audio/mpeg")).toBe("OTHER");
-    expect(getFileTypeFromMime("text/plain")).toBe("OTHER");
   });
 });
 

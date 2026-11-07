@@ -9,7 +9,6 @@ type Game = NonNullable<Awaited<ReturnType<typeof getGameBySlug>>>;
 type TabId = "resumo" | "arquivos" | "audio" | "preparo";
 
 const fileTypeLabels: Record<string, string> = {
-  COVER: "Capa",
   MANUAL: "Manual Oficial",
   RULEBOOK: "Livro de Regras",
   ERRATA: "Errata / FAQ",
@@ -26,33 +25,22 @@ export function GameDetailTabs({ game }: { game: Game }) {
   const nonCoverFiles = game.files.filter((file) => file.type !== "COVER");
   const displayFiles = nonCoverFiles.filter((f) => !isAudioFile(f));
 
-  // Áudios: derivados de game.files (mimeType audio/* ou extensão de áudio) + compat com game.audio legado
-  const legacyAudio = (
-    (game as Game & {
-      audio?: Array<{
-        id: string | number;
-        path: string;
-        name?: string | null;
-        size?: number | null;
-      }>;
-    }).audio ?? []
-  ).map((a) => ({ id: String(a.id), path: a.path, name: a.name ?? null, size: a.size ?? null }));
-  const fileAudio = game.files.filter(isAudioFile).map((f) => ({
+  // Áudios: derivados de game.files (mimeType audio/* ou extensão de áudio)
+  const audioFiles = game.files.filter(isAudioFile).map((f) => ({
     id: f.id,
     path: f.path,
     name: f.displayName || f.originalName,
     size: f.size,
   }));
-  const audioFiles = [...legacyAudio, ...fileAudio];
 
-  const temArquivos = displayFiles.length > 0;
-  const temAudio = audioFiles.length > 0;
+  const hasFiles = displayFiles.length > 0;
+  const hasAudio = audioFiles.length > 0;
 
   const tabs: Array<{ id: TabId; label: string }> = [
     { id: "resumo", label: "Resumo" },
     { id: "preparo", label: "Preparo" },
-    ...(temArquivos ? [{ id: "arquivos" as TabId, label: "Arquivos" }] : []),
-    ...(temAudio ? [{ id: "audio" as TabId, label: "Áudio" }] : []),
+    ...(hasFiles ? [{ id: "arquivos" as TabId, label: "Arquivos" }] : []),
+    ...(hasAudio ? [{ id: "audio" as TabId, label: "Áudio" }] : []),
   ];
 
   useEffect(() => {

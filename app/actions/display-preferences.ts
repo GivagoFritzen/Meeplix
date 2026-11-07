@@ -3,27 +3,19 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import {
+  DEFAULT_DISPLAY_PREFERENCES,
+  DisplayPreferencesSchema,
+  type DisplayPreferences,
+} from "@/lib/display-preferences-config";
 
-const DisplayPreferencesSchema = z.object({
-  hideDesigners: z.boolean(),
-  hidePublishers: z.boolean(),
-  hideArtists: z.boolean(),
-  hideTags: z.boolean(),
-});
-
-export type DisplayPreferences = z.infer<typeof DisplayPreferencesSchema>;
+export type { DisplayPreferences };
 
 export async function getDisplayPreferences(): Promise<DisplayPreferences> {
   const config = await prisma.siteConfig.findFirst();
 
   if (!config) {
-    return {
-      hideDesigners: true,
-      hidePublishers: false,
-      hideArtists: false,
-      hideTags: false,
-    };
+    return DEFAULT_DISPLAY_PREFERENCES;
   }
 
   return {
@@ -35,7 +27,7 @@ export async function getDisplayPreferences(): Promise<DisplayPreferences> {
 }
 
 export async function updateDisplayPreferences(
-  data: z.infer<typeof DisplayPreferencesSchema>,
+  data: DisplayPreferences,
 ) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Não autorizado");

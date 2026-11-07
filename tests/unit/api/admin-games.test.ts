@@ -4,7 +4,7 @@ vi.unmock("next/server");
 
 import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
-import { GET, POST, PUT } from "@/app/api/admin/games/route";
+import { GET, POST } from "@/app/api/admin/games/route";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -215,100 +215,5 @@ describe("POST /api/admin/games", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({ error: "Erro ao criar jogo" });
-  });
-});
-
-describe("PUT /api/admin/games", () => {
-  it("exige autenticação", async () => {
-    mocks.auth.mockResolvedValue(null);
-
-    const response = await PUT(
-      jsonRequest("http://localhost/api/admin/games?id=game-1", "PUT", { name: "Novo" })
-    );
-
-    expect(response.status).toBe(401);
-    expect(mocks.game.update).not.toHaveBeenCalled();
-  });
-
-  it("exige id na query string", async () => {
-    const response = await PUT(
-      jsonRequest("http://localhost/api/admin/games", "PUT", { name: "Novo" })
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "ID do jogo é obrigatório" });
-  });
-
-  it("atualiza jogo sem capa", async () => {
-    mocks.game.update.mockResolvedValue({ id: "game-1", name: "Novo" });
-
-    const response = await PUT(
-      jsonRequest("http://localhost/api/admin/games?id=game-1", "PUT", { name: "Novo" })
-    );
-    const body = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(body).toMatchObject({ id: "game-1", name: "Novo" });
-    expect(mocks.game.update).toHaveBeenCalledWith({
-      where: { id: "game-1" },
-      data: { name: "Novo", links: undefined },
-    });
-  });
-
-  it("processa capa em data URI", async () => {
-    mocks.game.update.mockResolvedValue({ id: "game-1" });
-
-    await PUT(
-      jsonRequest("http://localhost/api/admin/games?id=game-1", "PUT", {
-        coverImage: "data:image/webp;base64,Zm9v",
-      })
-    );
-
-    expect(mocks.game.update).toHaveBeenCalledWith({
-      where: { id: "game-1" },
-      data: {
-        coverImage: "data:image/webp;base64,Zm9v",
-        coverImageData: { base64: "Zm9v", mimeType: "image/webp" },
-        links: undefined,
-      },
-    });
-  });
-
-  it("processa URL de capa", async () => {
-    mocks.game.update.mockResolvedValue({ id: "game-1" });
-
-    await PUT(
-      jsonRequest("http://localhost/api/admin/games?id=game-1", "PUT", {
-        coverImage: "https://example.com/capa.png",
-      })
-    );
-
-    expect(mocks.game.update).toHaveBeenCalledWith({
-      where: { id: "game-1" },
-      data: {
-        coverImage: "https://example.com/capa.png",
-        coverImageData: Prisma.JsonNull,
-        links: undefined,
-      },
-    });
-  });
-
-  it("retorna 400 para dados inválidos", async () => {
-    const response = await PUT(
-      jsonRequest("http://localhost/api/admin/games?id=game-1", "PUT", { coverImage: 123 })
-    );
-
-    expect(response.status).toBe(400);
-  });
-
-  it("retorna 500 para erro não-Error", async () => {
-    mocks.game.update.mockRejectedValue("falha");
-
-    const response = await PUT(
-      jsonRequest("http://localhost/api/admin/games?id=game-1", "PUT", { name: "Novo" })
-    );
-
-    expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toEqual({ error: "Erro ao atualizar jogo" });
   });
 });

@@ -215,7 +215,7 @@ describe("POST /api/games/import", () => {
     expect(body.sources).toEqual({ ludopedia: "failed", bgg: "success" });
     expect(body.warnings).toEqual(["Dados complementares do BoardGameGeek"]);
     expect(body.data.name).toBe("Catan");
-    expect(body.errors).toEqual({ ludopedia: "Ludopedia fora do ar" });
+    expect(body.errors).toBeUndefined();
   });
 
   it("retorna resultado vazio quando ambas as fontes falham", async () => {
@@ -232,7 +232,7 @@ describe("POST /api/games/import", () => {
 
     expect(body.sources).toEqual({ ludopedia: "failed", bgg: "failed" });
     expect(body.warnings).toEqual([]);
-    expect(body.errors).toEqual({ ludopedia: "erro ludo", bgg: "erro bgg" });
+    expect(body.errors).toBeUndefined();
     expect(body.data.mechanics).toEqual([]);
     expect(body.data.categories).toEqual([]);
   });

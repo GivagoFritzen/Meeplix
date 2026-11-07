@@ -2,56 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { saveFile, deleteFile, validateFile } from "@/lib/storage";
+import { deleteFile } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
-
-export async function uploadGameFiles(
-  gameId: string,
-  files: Array<{ buffer: Buffer; name: string; type: string; size: number }>,
-  type: "COVER" | "MANUAL" | "RULEBOOK" | "ERRATA" | "QUICK_REFERENCE" | "IMAGE" | "OTHER" = "OTHER"
-) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const game = await prisma.game.findUnique({ where: { id: gameId } });
-  if (!game) throw new Error("Jogo não encontrado");
-
-  const results = [];
-
-  for (const file of files) {
-    const validation = validateFile({ size: file.size, type: file.type, name: file.name });
-    if (!validation.valid) {
-      results.push({ success: false, error: validation.error, fileName: file.name });
-      continue;
-    }
-
-    try {
-      const saved = await saveFile(gameId, file.buffer, file.name);
-
-      const gameFile = await prisma.gameFile.create({
-        data: {
-          gameId,
-          originalName: file.name,
-          displayName: file.name,
-          mimeType: file.type,
-          extension: saved.filename.split(".").pop() || "",
-          size: BigInt(saved.size),
-          path: saved.path,
-          type,
-        },
-      });
-
-      results.push({ success: true, file: gameFile });
-    } catch {
-      results.push({ success: false, error: "Erro ao salvar arquivo", fileName: file.name });
-    }
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/jogos");
-
-  return { success: true, results };
-}
 
 export async function deleteGameFiles(fileIds: string[]) {
   const user = await getCurrentUser();
@@ -110,48 +62,4 @@ export async function deleteGameFiles(fileIds: string[]) {
   }
 
   return { success: true, deleted };
-}
-
-export async function deleteGameFile(fileId: string) {
-  return deleteGameFiles([fileId]);
-}
-
-export async function listGameFiles(gameId: string) {
-  const files = await prisma.gameFile.findMany({
-    where: { gameId },
-    orderBy: { uploadedAt: "desc" },
-  });
-
-  return files.map((f) => ({
-    ...f,
-    size: Number(f.size),
-  }));
-}
-
-export async function setCoverImage(gameId: string, fileId: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const file = await prisma.gameFile.findUnique({ where: { id: fileId } });
-  if (!file || file.gameId !== gameId) throw new Error("Arquivo não encontrado");
-
-  await prisma.game.update({
-    where: { id: gameId },
-    data: { coverImage: file.path },
-  });
-
-  await prisma.gameFile.updateMany({
-    where: { gameId, type: "COVER" },
-    data: { type: "IMAGE" },
-  });
-
-  await prisma.gameFile.update({
-    where: { id: fileId },
-    data: { type: "COVER" },
-  });
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/jogos");
-
-  return { success: true };
 }

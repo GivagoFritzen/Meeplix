@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
-import { GameCreateSchema, GameUpdateSchema, GameFilterSchema } from "@/lib/validations/game";
+import { GameCreateSchema, GameFilterSchema } from "@/lib/validations/game";
 import type { GameFilterInput } from "@/lib/validations/game";
-import { parseCoverImage, stringifyCoverImage } from "@/lib/cover-image";
+import { buildCoverImageData } from "@/lib/cover-image";
+import { serializeGame } from "@/lib/game-mappers";
 import { buildGameWhere } from "@/lib/game-filters";
 
 function parseGameFilters(searchParams: URLSearchParams): GameFilterInput {
@@ -56,10 +57,7 @@ export async function GET(request: NextRequest) {
     prisma.game.count({ where }),
   ]);
 
-  const serialized = games.map((g) => ({
-    ...g,
-    files: g.files.map((f) => ({ ...f, size: Number(f.size) })),
-  }));
+  const serialized = games.map(serializeGame);
 
   return NextResponse.json({ games: serialized, total, page, totalPages: Math.ceil(total / limit) });
 }
@@ -75,12 +73,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = GameCreateSchema.parse(body);
 
-    // Processar coverImage - converter data URI para JSON ou manter URL
-    const coverImageData = parseCoverImage(data.coverImage);
-    const coverImage = stringifyCoverImage(
-      data.coverImage?.startsWith("data:") ? undefined : data.coverImage ?? null,
-      coverImageData
-    );
+    const { coverImage, coverImageData } = buildCoverImageData(data.coverImage);
 
     const processedData = {
       ...data,
@@ -102,58 +95,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
-  const session = await auth();
-
-  if (!session) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-  }
-
-  try {
-    const { searchParams } = new URL(request.url);
-    const gameId = searchParams.get("id");
-
-    if (!gameId) {
-      return NextResponse.json({ error: "ID do jogo é obrigatório"}, { status: 400 });
-    }
-
-    const body = await request.json();
-    const data = GameUpdateSchema.parse(body);
-
-    // Processar coverImage - converter data URI para JSON ou manter URL
-    // Apenas processa se coverImage foi enviado (update parcial)
-    let coverImageData: { base64: string; mimeType: string } | null | undefined;
-    let coverImage: string | null | undefined;
-    if (data.coverImage !== undefined) {
-      coverImageData = parseCoverImage(data.coverImage);
-      coverImage = stringifyCoverImage(
-        data.coverImage?.startsWith("data:") ? undefined : data.coverImage ?? null,
-        coverImageData
-      );
-    }
-
-    // Se estiver substituindo a capa, o antigo fica por conta da aplicação
-    // (não há arquivos de imagem no filesystem para excluir, apenas dados no DB)
-
-    const processedData = {
-      ...data,
-      ...(data.coverImage !== undefined && {
-        coverImageData: coverImageData ?? Prisma.JsonNull,
-        coverImage,
-      }),
-      links: data.links || undefined,
-    };
-
-    const game = await prisma.game.update({
-      where: { id: gameId },
-      data: processedData,
-    });
-
-    return NextResponse.json(game, { status: 200 });
-  } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: "Erro ao atualizar jogo" }, { status: 500 });
-  }
-}

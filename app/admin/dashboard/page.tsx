@@ -71,8 +71,6 @@ export default function AdminDashboard() {
         {/* Workspace Banner & Quick Action Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 gap-space-md border-b border-[#e2e8f0] mb-space-lg">
           <div>
-            <div className="flex items-center gap-2">
-            </div>
             <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight mt-1">Gerenciador de Acervo</h1>
             <p className="font-body-md text-body-md text-on-surface-variant">Cadastre novos títulos, sincronize metadados via scraping (BGG/Ludopedia) e edite estatísticas da sua ludoteca.</p>
             <div className="flex items-center gap-space-sm flex-wrap mt-space-md">

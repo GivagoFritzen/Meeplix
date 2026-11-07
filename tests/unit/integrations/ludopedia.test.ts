@@ -8,12 +8,9 @@ const ludopediaHtml = fs.readFileSync(ludopediaFixturePath, "utf-8");
 import {
   fetchLudopediaGame,
   normalizeLudopediaUrl,
-  extractLudopediaSlug,
   parseLudopediaGame,
-  type ImportedGameData,
 } from "@/lib/integrations/ludopedia";
 
-const originalFetch = global.fetch;
 const fetchMock = vi.fn();
 
 beforeEach(() => {
@@ -46,18 +43,6 @@ describe("ludopedia - normalizeLudopediaUrl", () => {
 
   it("rejeita URL inválida", () => {
     expect(() => normalizeLudopediaUrl("não é url")).toThrow("URL inválida.");
-  });
-});
-
-describe("ludopedia - extractLudopediaSlug", () => {
-  it("extrai slug da URL", () => {
-    expect(extractLudopediaSlug("https://ludopedia.com.br/jogo/cascadia")).toBe("cascadia");
-  });
-
-  it("rejeita URL sem slug", () => {
-    expect(() => extractLudopediaSlug("https://ludopedia.com.br/")).toThrow(
-      "URL da Ludopedia não contém slug de jogo válido.",
-    );
   });
 });
 

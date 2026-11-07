@@ -15,10 +15,8 @@ import {
   extractBggId,
   parseBggXml,
   fetchBggGame,
-  type ImportedGameData,
 } from "@/lib/integrations/bgg";
 
-const originalFetch = global.fetch;
 const fetchMock = vi.fn();
 
 beforeEach(() => {

@@ -1,6 +1,6 @@
 import { z, type ZodTypeAny } from "zod";
 
-const decimalField = (base: ZodTypeAny) =>
+const numericField = (base: ZodTypeAny) =>
   z.preprocess((v) => {
     if (typeof v === "string") {
       const n = parseFloat(v.replace(",", "."));
@@ -20,6 +20,27 @@ const integerField = (base: ZodTypeAny) =>
     if (typeof v === "number" && Number.isNaN(v)) return undefined;
     return v;
   }, base);
+
+const emptyToNull = (value: string | null | undefined) => (value === "" ? null : value);
+
+const optionalUrlField = () =>
+  z
+    .string()
+    .url("URL inválida")
+    .or(z.literal(""))
+    .nullable()
+    .optional()
+    .transform(emptyToNull);
+
+const optionalCoverImageField = () =>
+  z
+    .string()
+    .url("URL inválida")
+    .or(z.string().startsWith("data:image/"))
+    .or(z.literal(""))
+    .nullable()
+    .optional()
+    .transform(emptyToNull);
 
 const requiredNumber = () =>
   z.number({
@@ -44,27 +65,27 @@ const GameCreateBaseSchema = z.object({
   publisher: z.string().max(200, "Máximo de 200 caracteres").optional().nullable(),
   designer: z.string().max(200, "Máximo de 200 caracteres").optional().nullable(),
   artist: z.string().max(200, "Máximo de 200 caracteres").optional().nullable(),
-  bggRating: decimalField(z.number().min(0, "Nota entre 0 e 10").max(10, "Nota entre 0 e 10").optional().nullable()),
-  ludoRating: decimalField(z.number().min(0, "Nota entre 0 e 10").max(10, "Nota entre 0 e 10").optional().nullable()),
+  bggRating: numericField(z.number().min(0, "Nota entre 0 e 10").max(10, "Nota entre 0 e 10").optional().nullable()),
+  ludoRating: numericField(z.number().min(0, "Nota entre 0 e 10").max(10, "Nota entre 0 e 10").optional().nullable()),
   bggRank: integerField(z.number().int().positive("Ranking deve ser positivo").optional().nullable()),
   ludoRank: integerField(z.number().int().positive("Ranking deve ser positivo").optional().nullable()),
-  weight: decimalField(z.number().min(1.0, "Peso entre 1.0 e 5.0").max(5.0, "Peso entre 1.0 e 5.0").optional().nullable()),
-  interaction: decimalField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
-  luck: decimalField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
-  downtime: decimalField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
-  replayability: decimalField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
+  weight: numericField(z.number().min(1.0, "Peso entre 1.0 e 5.0").max(5.0, "Peso entre 1.0 e 5.0").optional().nullable()),
+  interaction: numericField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
+  luck: numericField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
+  downtime: numericField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
+  replayability: numericField(z.number().min(1.0, "Valor entre 1.0 e 5.0").max(5.0, "Valor entre 1.0 e 5.0").optional().nullable()),
   bestPlayers: integerField(z.number().int().min(1, "Mínimo de 1 jogador").max(20, "Máximo de 20 jogadores").optional().nullable()),
   minAge: integerField(requiredNumber().int().min(0, "Idade mínima inválida").max(99, "Idade máxima de 99 anos")),
   notes: z.string().max(10000, "Máximo de 10.000 caracteres").optional().nullable(),
-  coverImage: z.string().url("URL inválida").or(z.string().startsWith("data:image/")).or(z.literal("")).nullable().optional().transform((v) => (v === "" ? null : v)),
+  coverImage: optionalCoverImageField(),
   mechanics: z.array(z.string().max(50, "Máximo de 50 caracteres")).default([]),
   categories: z.array(z.string().max(50, "Máximo de 50 caracteres")).default([]),
   preparationText: z.string().max(10000, "Máximo de 10.000 caracteres").optional().nullable(),
   isActive: z.boolean().default(false).optional(),
   links: z.object({
-    bgg: z.string().url("URL inválida").or(z.literal("")).nullable().optional().transform((v) => (v === "" ? null : v)),
-    ludopedia: z.string().url("URL inválida").or(z.literal("")).nullable().optional().transform((v) => (v === "" ? null : v)),
-    manual: z.string().url("URL inválida").or(z.literal("")).nullable().optional().transform((v) => (v === "" ? null : v)),
+    bgg: optionalUrlField(),
+    ludopedia: optionalUrlField(),
+    manual: optionalUrlField(),
   }).optional(),
 });
 

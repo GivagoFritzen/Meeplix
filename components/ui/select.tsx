@@ -74,7 +74,6 @@ const SelectContent = React.forwardRef<
       position={position}
       {...props}
     >
-      <div className="absolute inset-0 z-[-1] bg-black backdrop-opacity-0 pointer-events-none transition-opacity duration-200" />
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(

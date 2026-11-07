@@ -1,32 +1,8 @@
 import { XMLParser } from "fast-xml-parser";
 
-export type ImportedGameData = {
-  name?: string;
-  originalName?: string | null;
-  description?: string | null;
-  year?: number | null;
-  minPlayers?: number | null;
-  maxPlayers?: number | null;
-  minPlaytime?: number | null;
-  publisher?: string | null;
-  designer?: string | null;
-  artist?: string | null;
-  bggRating?: number | null;
-  ludoRating?: number | null;
-  bggRank?: number | null;
-  ludoRank?: number | null;
-  weight?: number | null;
-  interaction?: number | null;
-  luck?: number | null;
-  downtime?: number | null;
-  replayability?: number | null;
-  bestPlayers?: number | null;
-  minAge?: number | null;
-  coverImage?: string | null;
-  mechanics?: string[];
-  categories?: string[];
-  sourceUrl?: string;
-};
+import type { ImportedGameData } from "./types";
+
+export type { ImportedGameData } from "./types";
 
 type XmlNode = Record<string, unknown>;
 type XmlNodeList = XmlNode | XmlNode[] | undefined;

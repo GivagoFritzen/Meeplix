@@ -46,7 +46,7 @@ export function GameActiveToggle({
         } else {
           throw new Error("Falha na atualização");
         }
-      } catch (err) {
+      } catch {
         setIsActive(!nextState);
         toast({
           title: "Erro",

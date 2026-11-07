@@ -33,17 +33,6 @@ export function getFileStoragePath(gameId: string, filename: string): string {
   return path.join(getGameStoragePath(gameId), filename);
 }
 
-export function sanitizeFilename(filename: string): string {
-  const ext = path.extname(filename).toLowerCase().substring(1);
-  const name = path.basename(filename, path.extname(filename))
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]/g, "_")
-    .replace(/_+/g, "_")
-    .substring(0, 100);
-  return `${name}.${ext}`;
-}
-
 export function validateFile(file: { size: number; type: string; name: string }): { valid: boolean; error?: string } {
   if (file.size > MAX_FILE_SIZE) {
     return { valid: false, error: `Arquivo muito grande. Máximo: ${formatFileSize(MAX_FILE_SIZE)}` };

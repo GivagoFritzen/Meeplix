@@ -30,7 +30,7 @@ vi.mock("next/navigation", () => {
 });
 
 vi.mock("next/image", () => ({
-  Image: (props: unknown) => null,
+  Image: (_props: unknown) => null,
 }));
 
 vi.mock("next/server", () => ({}));

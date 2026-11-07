@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import type { GameFilterInput } from "@/lib/validations/game";
 
 const PLAYER_RANGES = {
@@ -7,19 +8,19 @@ const PLAYER_RANGES = {
   "5+": { min: 5, max: null },
 } as const;
 
-const DURATION_FILTERS = {
+const DURATION_FILTERS: Record<string, Prisma.GameWhereInput> = {
   quick: { minPlaytime: { lte: 30 } },
   medium: { minPlaytime: { gte: 30, lte: 60 } },
   long: { minPlaytime: { gte: 90 } },
 };
 
-const COMPLEXITY_FILTERS = {
+const COMPLEXITY_FILTERS: Record<string, Prisma.GameWhereInput> = {
   light: { weight: { lt: 2.0 } },
   medium: { weight: { gte: 2.0, lt: 3.0 } },
   heavy: { weight: { gte: 3.0 } },
 };
 
-function buildSearchCondition(search: string): Record<string, unknown>[] {
+function buildSearchCondition(search: string): Prisma.GameWhereInput[] {
   return [
     { name: { contains: search, mode: "insensitive" } },
     { originalName: { contains: search, mode: "insensitive" } },
@@ -29,8 +30,8 @@ function buildSearchCondition(search: string): Record<string, unknown>[] {
   ];
 }
 
-function buildPlayerConditions(filters: GameFilterInput): Record<string, unknown>[] {
-  const conditions: Record<string, unknown>[] = [];
+function buildPlayerConditions(filters: GameFilterInput): Prisma.GameWhereInput[] {
+  const conditions: Prisma.GameWhereInput[] = [];
   const { players, minPlayers, maxPlayers } = filters;
 
   if (players && players !== "all") {
@@ -56,8 +57,8 @@ function buildPlayerConditions(filters: GameFilterInput): Record<string, unknown
  * Monta o `where` do Prisma a partir dos filtros de busca de jogos.
  * Compartilhado entre a página pública e a listagem administrativa.
  */
-export function buildGameWhere(filters: GameFilterInput): Record<string, unknown> {
-  const where: Record<string, unknown> = {};
+export function buildGameWhere(filters: GameFilterInput): Prisma.GameWhereInput {
+  const where: Prisma.GameWhereInput = {};
 
   if (filters.search) {
     where.OR = buildSearchCondition(filters.search);

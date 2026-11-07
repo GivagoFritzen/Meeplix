@@ -6,11 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatNumber(num: Maybe<number>): string {
-  if (num === null || num === undefined) return "-";
-  return new Intl.NumberFormat("pt-BR").format(num);
-}
-
 export function formatRating(rating: Maybe<number>): string {
   if (rating === null || rating === undefined) return "-";
   return rating.toFixed(1).replace(".", ",");
@@ -97,13 +92,6 @@ export function slugify(text: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
-}
-
-export function getFileTypeFromExtension(ext: string): "COVER" | "MANUAL" | "RULEBOOK" | "ERRATA" | "QUICK_REFERENCE" | "IMAGE" | "OTHER" {
-  const lower = ext.toLowerCase();
-  if (["jpg", "jpeg", "png", "webp", "gif"].includes(lower)) return "IMAGE";
-  if (lower === "pdf") return "MANUAL";
-  return "OTHER";
 }
 
 export function formatFileSize(bytes: number | bigint): string {

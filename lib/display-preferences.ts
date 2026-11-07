@@ -4,17 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getDisplayPreferences,
   updateDisplayPreferences,
-  type DisplayPreferences,
 } from "@/app/actions/display-preferences";
+import {
+  DEFAULT_DISPLAY_PREFERENCES,
+  type DisplayPreferences,
+} from "@/lib/display-preferences-config";
 
 export type { DisplayPreferences };
-
-export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
-  hideDesigners: true,
-  hidePublishers: false,
-  hideArtists: false,
-  hideTags: false,
-};
 
 export function useDisplayPreferences() {
   const [preferences, setPreferences] = useState<DisplayPreferences>(
@@ -41,5 +37,5 @@ export function useDisplayPreferences() {
     [],
   );
 
-  return { preferences, isLoaded, updatePreferences, setPreferences };
+  return { preferences, isLoaded, updatePreferences };
 }

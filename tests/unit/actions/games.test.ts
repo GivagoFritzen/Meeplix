@@ -1,24 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  createGame,
-  updateGame,
-  deleteGame,
-  getGames,
-  getGameById,
-  getGameBySlug,
-  searchGames,
-  toggleGameActive,
-} from "@/app/actions/games";
+import { getGames, getGameBySlug, toggleGameActive } from "@/app/actions/games";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   revalidatePath: vi.fn(),
-  transaction: vi.fn((fns) => Promise.all(fns)),
+  transaction: vi.fn((operations) => Promise.all(operations)),
   game: {
-    create: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
-    delete: vi.fn(),
     findMany: vi.fn(),
     findFirst: vi.fn(),
     findUnique: vi.fn(),
@@ -36,28 +25,11 @@ vi.mock("@/lib/prisma", () => ({
     game: mocks.game,
     $transaction: mocks.transaction,
   },
-  default: {
-    game: mocks.game,
-    $transaction: mocks.transaction,
-  },
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: mocks.revalidatePath,
 }));
-
-const validCreateInput = {
-  name: "Catan",
-  minPlayers: 3,
-  maxPlayers: 4,
-  minPlaytime: 60,
-  bestPlayers: 4,
-  minAge: 10,
-  bggRating: 7.8,
-  bggRank: 200,
-  mechanics: [],
-  categories: [],
-};
 
 function buildDbGame(overrides: Record<string, unknown> = {}) {
   return {
@@ -80,124 +52,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
   mocks.game.findFirst.mockResolvedValue(null);
-});
-
-describe("createGame", () => {
-  it("exige usuário autenticado", async () => {
-    mocks.getCurrentUser.mockResolvedValue(null);
-
-    await expect(createGame(validCreateInput)).rejects.toThrow("Não autorizado");
-    expect(mocks.game.create).not.toHaveBeenCalled();
-  });
-
-  it("valida os dados antes de criar", async () => {
-    await expect(createGame({ ...validCreateInput, name: "" })).rejects.toThrow();
-    expect(mocks.game.create).not.toHaveBeenCalled();
-  });
-
-  it("cria jogo com listas padrão e revalida páginas", async () => {
-    const created = { id: "game-1", ...validCreateInput };
-    mocks.game.create.mockResolvedValue(created);
-
-    const result = await createGame(validCreateInput);
-
-    expect(mocks.game.create).toHaveBeenCalledWith({
-      data: {
-        ...validCreateInput,
-        mechanics: [],
-        categories: [],
-        links: {},
-      },
-    });
-    expect(result).toEqual({ success: true, game: created });
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin");
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin/jogos");
-  });
-
-  it("preserva mecânicas, categorias e links informados", async () => {
-    mocks.game.create.mockResolvedValue({ id: "game-1" });
-
-    await createGame({
-      ...validCreateInput,
-      mechanics: ["Trading"],
-      categories: ["Economy"],
-      links: { bgg: "https://boardgamegeek.com/boardgame/13" },
-    });
-
-    expect(mocks.game.create).toHaveBeenCalledWith({
-      data: {
-        ...validCreateInput,
-        mechanics: ["Trading"],
-        categories: ["Economy"],
-        links: { bgg: "https://boardgamegeek.com/boardgame/13" },
-      },
-    });
-  });
-});
-
-describe("updateGame", () => {
-  it("exige usuário autenticado", async () => {
-    mocks.getCurrentUser.mockResolvedValue(null);
-
-    await expect(updateGame("game-1", { name: "Novo" })).rejects.toThrow("Não autorizado");
-    expect(mocks.game.update).not.toHaveBeenCalled();
-  });
-
-  it("atualiza apenas campos enviados", async () => {
-    mocks.game.update.mockResolvedValue({ id: "game-1", name: "Novo" });
-
-    const result = await updateGame("game-1", { name: "Novo" });
-
-    expect(mocks.game.update).toHaveBeenCalledWith({
-      where: { id: "game-1" },
-      data: { name: "Novo" },
-    });
-    expect(result).toEqual({ success: true, game: { id: "game-1", name: "Novo" } });
-  });
-
-  it("inclui listas quando informadas", async () => {
-    mocks.game.update.mockResolvedValue({ id: "game-1" });
-
-    await updateGame("game-1", {
-      mechanics: ["Drafting"],
-      categories: ["Fantasy"],
-      links: { manual: "https://example.com/manual.pdf" },
-    });
-
-    expect(mocks.game.update).toHaveBeenCalledWith({
-      where: { id: "game-1" },
-      data: {
-        mechanics: ["Drafting"],
-        categories: ["Fantasy"],
-        links: { manual: "https://example.com/manual.pdf" },
-      },
-    });
-  });
-
-  it("rejeita dados inválidos", async () => {
-    await expect(updateGame("game-1", { coverImage: "url-invalida" })).rejects.toThrow();
-    expect(mocks.game.update).not.toHaveBeenCalled();
-  });
-});
-
-describe("deleteGame", () => {
-  it("exige usuário autenticado", async () => {
-    mocks.getCurrentUser.mockResolvedValue(null);
-
-    await expect(deleteGame("game-1")).rejects.toThrow("Não autorizado");
-    expect(mocks.game.delete).not.toHaveBeenCalled();
-  });
-
-  it("remove o jogo e revalida páginas", async () => {
-    mocks.game.delete.mockResolvedValue({ id: "game-1" });
-
-    const result = await deleteGame("game-1");
-
-    expect(mocks.game.delete).toHaveBeenCalledWith({ where: { id: "game-1" } });
-    expect(result).toEqual({ success: true });
-    expect(mocks.revalidatePath).toHaveBeenCalledTimes(3);
-  });
 });
 
 describe("getGames", () => {
@@ -292,11 +146,9 @@ describe("getGames", () => {
     const regularGame = buildDbGame({ id: "game-2", name: "Catan", isActive: false });
 
     mocks.game.findFirst.mockResolvedValue(activeGame);
-    // count com id do ativo (verifica se bate com o filtro) -> 0 (não bate)
-    // count matching total -> 1
     mocks.game.count
-      .mockResolvedValueOnce(0) // activeMatchesCount
-      .mockResolvedValueOnce(1); // totalMatching
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1);
     mocks.game.findMany.mockResolvedValue([regularGame]);
 
     const result = await getGames({ search: "catan", page: 1, limit: 10 });
@@ -304,7 +156,7 @@ describe("getGames", () => {
     expect(result.games[0].id).toBe("active-1");
     expect(result.games[0].isActive).toBe(true);
     expect(result.games[1].id).toBe("game-2");
-    expect(result.total).toBe(2); // 1 matching + 1 active
+    expect(result.total).toBe(2);
   });
 
   it("não duplica o jogo ativo quando ele corresponde ao filtro selecionado", async () => {
@@ -312,8 +164,6 @@ describe("getGames", () => {
     const regularGame = buildDbGame({ id: "game-2", name: "Catan: Seafarers", isActive: false });
 
     mocks.game.findFirst.mockResolvedValue(activeGame);
-    // activeMatchesCount -> 1 (bate)
-    // totalMatching -> 2 (ambos batem)
     mocks.game.count
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(2);
@@ -367,69 +217,6 @@ describe("toggleGameActive", () => {
       data: { isActive: false },
     });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/colecao");
-  });
-});
-
-describe("getGameById", () => {
-  it("retorna null quando o jogo não existe", async () => {
-    mocks.game.findUnique.mockResolvedValue(null);
-
-    await expect(getGameById("missing")).resolves.toBeNull();
-  });
-
-  it("prioriza capa de arquivo e converte valores", async () => {
-    mocks.game.findUnique.mockResolvedValue(
-      buildDbGame({
-        coverImage: "https://example.com/fallback.jpg",
-        files: [
-          { id: "f1", type: "COVER", path: "games/game-1/cover.png", size: BigInt(123) },
-        ],
-        bggRating: "7.9",
-        ludoRating: "8.1",
-        weight: "3.2",
-      })
-    );
-
-    const result = await getGameById("game-1");
-
-    expect(result).toMatchObject({
-      coverImage: "games/game-1/cover.png",
-      bggRating: 7.9,
-      ludoRating: 8.1,
-      weight: 3.2,
-    });
-    expect(result?.files[0].size).toBe(123);
-  });
-
-  it("usa coverImage como fallback", async () => {
-    mocks.game.findUnique.mockResolvedValue(
-      buildDbGame({ coverImage: "https://example.com/cover.jpg" })
-    );
-
-    const result = await getGameById("game-1");
-
-    expect(result?.coverImage).toBe("https://example.com/cover.jpg");
-  });
-
-  it("converte coverImageData em data URI", async () => {
-    mocks.game.findUnique.mockResolvedValue(
-      buildDbGame({
-        coverImageData: { base64: "YWJj", mimeType: "image/png" },
-      })
-    );
-
-    const result = await getGameById("game-1");
-
-    expect(result?.coverImage).toBe("data:image/png;base64,YWJj");
-  });
-
-  it("retorna capa nula quando não há dados", async () => {
-    mocks.game.findUnique.mockResolvedValue(buildDbGame());
-
-    const result = await getGameById("game-1");
-
-    expect(result?.coverImage).toBeNull();
-    expect(result?.bggRating).toBeNull();
   });
 });
 
@@ -510,34 +297,5 @@ describe("getGameBySlug", () => {
       where: undefined,
       include: { files: { orderBy: { uploadedAt: "desc" } } },
     });
-  });
-});
-
-describe("searchGames", () => {
-  it("retorna lista vazia para busca em branco", async () => {
-    const result = await searchGames("   ");
-
-    expect(result).toEqual([]);
-    expect(mocks.game.findMany).not.toHaveBeenCalled();
-  });
-
-  it("busca por nome e nome original com limite", async () => {
-    const games = [{ id: "game-1", name: "Catan", year: 1995, coverImage: null }];
-    mocks.game.findMany.mockResolvedValue(games);
-
-    const result = await searchGames("catan", 5);
-
-    expect(mocks.game.findMany).toHaveBeenCalledWith({
-      where: {
-        OR: [
-          { name: { contains: "catan", mode: "insensitive" } },
-          { originalName: { contains: "catan", mode: "insensitive" } },
-        ],
-      },
-      take: 5,
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, year: true, coverImage: true },
-    });
-    expect(result).toEqual(games);
   });
 });

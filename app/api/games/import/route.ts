@@ -20,12 +20,10 @@ interface MergeResult {
     bgg: ImportSourceStatus;
   };
   warnings: string[];
-  errors?: { ludopedia?: string; bgg?: string };
 }
 
 interface SourceResult {
-  success: ImportedGameData | null;
-  error: string | null;
+  data: ImportedGameData | null;
 }
 
 const LUDOPEDIA_FIELDS = [
@@ -197,10 +195,6 @@ function mergeGameData(
     warnings.push("Dados complementares do BoardGameGeek");
   }
 
-  // Ensure mechanics and categories have at least empty arrays
-  merged.mechanics = merged.mechanics || [];
-  merged.categories = merged.categories || [];
-
   return {
     data: { ...merged, links },
     sources: {
@@ -212,35 +206,26 @@ function mergeGameData(
 }
 
 function fetchLudopediaSource(url?: string): Promise<SourceResult> {
-  if (!url) return Promise.resolve({ success: null, error: null });
+  if (!url) return Promise.resolve({ data: null });
   return fetchLudopediaGame(url)
-    .then((data) => ({ success: data, error: null }))
-    .catch((err) => ({ success: null, error: err.message }));
+    .then((data) => ({ data }))
+    .catch(() => ({ data: null }));
 }
 
 function fetchBggSource(url?: string): Promise<SourceResult> {
-  if (!url) return Promise.resolve({ success: null, error: null });
+  if (!url) return Promise.resolve({ data: null });
   return fetchBggGame(url)
-    .then((data) => ({ success: data, error: null }))
-    .catch((err) => ({ success: null, error: err.message }));
+    .then((data) => ({ data }))
+    .catch(() => ({ data: null }));
 }
 
 async function fetchImportSources(ludopediaUrl?: string, bggUrl?: string) {
-  const [ludoResult, bggResult] = await Promise.allSettled([
+  const [ludoData, bggData] = await Promise.all([
     fetchLudopediaSource(ludopediaUrl),
     fetchBggSource(bggUrl),
   ]);
 
-  return {
-    ludoData:
-      ludoResult.status === "fulfilled"
-        ? ludoResult.value
-        : { success: null, error: "Erro ao processar Ludopedia" },
-    bggData:
-      bggResult.status === "fulfilled"
-        ? bggResult.value
-        : { success: null, error: "Erro ao processar BGG" },
-  };
+  return { ludoData, bggData };
 }
 
 function mergeLinks(existing: ImportedLinks | null, imported: ImportedLinks | undefined): ImportedLinks {
@@ -320,13 +305,9 @@ export async function POST(request: NextRequest) {
     const { ludopediaUrl, bggUrl, gameId } = result.data;
     const { ludoData, bggData } = await fetchImportSources(ludopediaUrl, bggUrl);
     const { data: mergedData, sources, warnings } = mergeGameData(
-      ludoData.success,
-      bggData.success,
+      ludoData.data,
+      bggData.data,
     );
-    const errors = {
-      ...(ludoData.error ? { ludopedia: ludoData.error } : {}),
-      ...(bggData.error ? { bgg: bggData.error } : {}),
-    };
 
     const updatedGame = gameId
       ? await updateGameFromImport(gameId, mergedData)
@@ -337,7 +318,6 @@ export async function POST(request: NextRequest) {
       game: updatedGame ?? mergedData,
       sources,
       warnings,
-      ...(Object.keys(errors).length > 0 && { errors }),
     });
   } catch {
     return NextResponse.json(
