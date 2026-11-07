@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { PackageOpen } from "lucide-react";
 import { formatFileSize, isAudioFile, resolveAssetUrl } from "@/lib/utils";
 import type { getGameBySlug } from "@/app/actions/games";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 
 type Game = NonNullable<Awaited<ReturnType<typeof getGameBySlug>>>;
 type TabId = "resumo" | "arquivos" | "audio" | "preparo";
@@ -222,9 +223,7 @@ export function GameDetailTabs({ game }: { game: Game }) {
               </div>
 
               {game.description ? (
-                <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
-                  {game.description}
-                </div>
+                <MarkdownContent content={game.description} />
               ) : (
                 <p className="text-slate-400 text-sm italic py-2">
                   Nenhuma descrição cadastrada para este jogo.
@@ -254,9 +253,7 @@ export function GameDetailTabs({ game }: { game: Game }) {
               </div>
 
               {game.preparationText ? (
-                <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
-                  {game.preparationText}
-                </div>
+                <MarkdownContent content={game.preparationText} />
               ) : (
                 <p className="text-slate-400 text-sm italic py-2">
                   Nenhum texto de prepara&ccedil;&atilde;o cadastrado para este jogo.
